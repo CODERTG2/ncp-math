@@ -1,358 +1,160 @@
-// MAT Portal JavaScript
+// MAT Portal JavaScript - Main Controller
 document.addEventListener('DOMContentLoaded', () => {
     console.log('MAT Portal loaded successfully!');
     
-    // DOM Elements
-    const navbar = document.getElementById('navbar');
-    const authSection = document.getElementById('authSection');
-    const memberDashboard = document.getElementById('memberDashboard');
-    const teacherDashboard = document.getElementById('teacherDashboard');
-    const loginForm = document.getElementById('loginForm');
-    const registerForm = document.getElementById('registerForm');
-    const authModeBtns = document.querySelectorAll('.auth-mode-btn');
-    const userTypeBtns = document.querySelectorAll('.user-type-btn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const forgotPasswordLink = document.getElementById('forgotPassword');
-    const authFooterText = document.getElementById('authFooterText');
+    // Global state variables
+    window.isLoggedIn = false;
+    window.currentUser = null;
+    window.authToken = localStorage.getItem('authToken');
     
-    let currentUserType = 'member';
-    let currentAuthMode = 'login';
-    let isLoggedIn = false;
-    let currentUser = null;
-    let authToken = localStorage.getItem('authToken');
+    // Wait for components to load before initializing
+    document.addEventListener('componentsLoaded', () => {
+        console.log('Components loaded, initializing main controller...');
+        init();
+    });
     
-    // Check if user is already logged in
-    if (authToken) {
-        validateToken();
+    function init() {
+        // DOM Elements (available after components load)
+        const navbar = document.getElementById('navbar');
+        const authSection = document.getElementById('authSection');
+        const memberDashboard = document.getElementById('memberDashboard');
+        const teacherDashboard = document.getElementById('teacherDashboard');
+        const logoutBtn = document.getElementById('logoutBtn');
+        
+        if (!navbar || !authSection || !memberDashboard || !teacherDashboard || !logoutBtn) {
+            console.error('Required DOM elements not found. Components may not have loaded properly.');
+            return;
+        }
+        
+        setupApplication(navbar, authSection, memberDashboard, teacherDashboard, logoutBtn);
+    }
+    
+    function setupApplication(navbar, authSection, memberDashboard, teacherDashboard, logoutBtn) {
+        setupNavbarScrollEffect();
+        setupLogoutHandler(logoutBtn);
+        setupKeyboardShortcuts();
+        
+        // Store references for global access
+        window.domElements = {
+            navbar,
+            authSection,
+            memberDashboard,
+            teacherDashboard,
+            logoutBtn
+        };
+        
+        // Check if user is already logged in
+        if (window.authToken) {
+            window.validateTokenAndSetupAuth();
+        }
+        
+        // Auto-focus username field if not logged in
+        setTimeout(() => {
+            if (!window.isLoggedIn) {
+                const usernameField = document.getElementById('loginName');
+                if (usernameField) usernameField.focus();
+            }
+        }, 500);
+    }
+     
+    function init() {
+        setupNavbarScrollEffect();
+        setupLogoutHandler();
+        setupKeyboardShortcuts();
+        
+        // Check if user is already logged in
+        if (window.authToken) {
+            window.validateTokenAndSetupAuth();
+        }
+        
+        // Auto-focus username field if not logged in
+        setTimeout(() => {
+            if (!window.isLoggedIn) {
+                const usernameField = document.getElementById('loginName');
+                if (usernameField) usernameField.focus();
+            }
+        }, 500);
     }
     
     // Navbar scroll effect
-    window.addEventListener('scroll', () => {
-        if (window.scrollY > 100) {
-            navbar.classList.add('scrolled');
-        } else {
-            navbar.classList.remove('scrolled');
-        }
-    });
-
-    // Auth mode toggle (Login/Register)
-    authModeBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            authModeBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentAuthMode = btn.getAttribute('data-mode');
-            
-            if (currentAuthMode === 'login') {
-                loginForm.style.display = 'block';
-                registerForm.style.display = 'none';
-                authFooterText.innerHTML = 'Forgot your password? <a href="#" id="forgotPassword">Reset here</a>';
-            } else {
-                loginForm.style.display = 'none';
-                registerForm.style.display = 'block';
-                authFooterText.innerHTML = 'Already have an account? <a href="#" id="switchToLogin">Sign in here</a>';
-            }
-            
-            // Re-attach event listeners
-            attachFooterListeners();
-            
-            // Add visual feedback
-            btn.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                btn.style.transform = 'scale(1)';
-            }, 150);
-        });
-    });
-    
-    // User type selection
-    userTypeBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            // Remove active class from all buttons
-            userTypeBtns.forEach(b => b.classList.remove('active'));
-            // Add active class to clicked button
-            btn.classList.add('active');
-            // Update current user type
-            currentUserType = btn.getAttribute('data-type');
-            
-            // Add visual feedback
-            btn.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                btn.style.transform = 'scale(1)';
-            }, 150);
-        });
-    });
-    
-    // Login form submission
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const name = document.getElementById('loginName').value.trim();
-        const password = document.getElementById('loginPassword').value.trim();
-        
-        if (!name || !password) {
-            showNotification('Please fill in all fields', 'error');
-            return;
-        }
-        
-        // Show loading state
-        const loginBtn = loginForm.querySelector('.auth-btn');
-        const originalText = loginBtn.innerHTML;
-        loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
-        loginBtn.disabled = true;
-        
-        try {
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ name, password })
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                // Store token and user data
-                localStorage.setItem('authToken', data.token);
-                currentUser = data.user;
-                authToken = data.token;
-                
-                // Success - show appropriate dashboard
-                isLoggedIn = true;
-                showDashboard(data.user.userType, data.user.name);
-                showNotification(`Welcome back, ${data.user.name}!`, 'success');
-            } else {
-                showNotification(data.message || 'Login failed', 'error');
-            }
-            
-        } catch (error) {
-            console.error('Login error:', error);
-            showNotification('Network error. Please try again.', 'error');
-        } finally {
-            // Reset button state
-            loginBtn.innerHTML = originalText;
-            loginBtn.disabled = false;
-        }
-    });
-
-    // Registration form submission
-    registerForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const formData = {
-            name: document.getElementById('registerName').value.trim(),
-            password: document.getElementById('registerPassword').value,
-            userType: currentUserType
-        };
-        
-        const confirmPassword = document.getElementById('confirmPassword').value;
-        
-        // Client-side validation
-        if (!formData.name || !formData.password) {
-            showNotification('Please fill in all required fields', 'error');
-            return;
-        }
-        
-        if (formData.password !== confirmPassword) {
-            showNotification('Passwords do not match', 'error');
-            return;
-        }
-        
-        if (formData.password.length < 6) {
-            showNotification('Password must be at least 6 characters long', 'error');
-            return;
-        }
-        
-        // Show loading state
-        const registerBtn = registerForm.querySelector('.auth-btn');
-        const originalText = registerBtn.innerHTML;
-        registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
-        registerBtn.disabled = true;
-        
-        try {
-            const response = await fetch('/api/auth/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData)
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                // Store token and user data
-                localStorage.setItem('authToken', data.token);
-                currentUser = data.user;
-                authToken = data.token;
-                
-                // Success - show appropriate dashboard
-                isLoggedIn = true;
-                showDashboard(data.user.userType, data.user.name);
-                showNotification(`Welcome to MAT Portal, ${data.user.name}!`, 'success');
-            } else {
-                if (data.errors && data.errors.length > 0) {
-                    const errorMessages = data.errors.map(err => err.msg).join(', ');
-                    showNotification(errorMessages, 'error');
+    function setupNavbarScrollEffect() {
+        window.addEventListener('scroll', () => {
+            const navbar = window.domElements?.navbar || document.getElementById('navbar');
+            if (navbar) {
+                if (window.scrollY > 100) {
+                    navbar.classList.add('scrolled');
                 } else {
-                    showNotification(data.message || 'Registration failed', 'error');
+                    navbar.classList.remove('scrolled');
                 }
             }
-            
-        } catch (error) {
-            console.error('Registration error:', error);
-            showNotification('Network error. Please try again.', 'error');
-        } finally {
-            // Reset button state
-            registerBtn.innerHTML = originalText;
-            registerBtn.disabled = false;
-        }
-    });
-    
-    // Logout functionality
-    logoutBtn.addEventListener('click', async () => {
-        try {
-            if (authToken) {
-                await fetch('/api/auth/logout', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-            }
-        } catch (error) {
-            console.error('Logout API error:', error);
-        } finally {
-            logout();
-        }
-    });
-
-    // Attach footer link event listeners
-    function attachFooterListeners() {
-        const forgotPasswordLink = document.getElementById('forgotPassword');
-        const switchToLoginLink = document.getElementById('switchToLogin');
-        
-        if (forgotPasswordLink) {
-            forgotPasswordLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                showNotification('Password reset functionality coming soon!', 'info');
-            });
-        }
-        
-        if (switchToLoginLink) {
-            switchToLoginLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                // Switch to login mode
-                authModeBtns.forEach(btn => {
-                    btn.classList.remove('active');
-                    if (btn.getAttribute('data-mode') === 'login') {
-                        btn.classList.add('active');
-                    }
-                });
-                currentAuthMode = 'login';
-                loginForm.style.display = 'block';
-                registerForm.style.display = 'none';
-                authFooterText.innerHTML = 'Forgot your password? <a href="#" id="forgotPassword">Reset here</a>';
-                attachFooterListeners();
-            });
-        }
-    }
-    
-    // Initial attachment of footer listeners
-    attachFooterListeners();
-
-    // Validate stored token
-    async function validateToken() {
-        try {
-            const response = await fetch('/api/auth/profile', {
-                headers: {
-                    'Authorization': `Bearer ${authToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success) {
-                    currentUser = data.user;
-                    isLoggedIn = true;
-                    showDashboard(data.user.userType, data.user.name);
-                    return;
-                }
-            }
-        } catch (error) {
-            console.error('Token validation error:', error);
-        }
-        
-        // If validation fails, clear stored data
-        localStorage.removeItem('authToken');
-        authToken = null;
-        currentUser = null;
-    }
-    
-    // Simulate login API call
-    async function simulateLogin(username, password, userType) {
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                // Simple validation (in real app, this would be server-side)
-                if (userType === 'teacher' && username.toLowerCase().includes('teacher')) {
-                    resolve({ success: true, userType: 'teacher', name: username });
-                } else if (userType === 'member' && username.toLowerCase().includes('student')) {
-                    resolve({ success: true, userType: 'member', name: username });
-                } else if (username === 'demo' && password === 'demo') {
-                    resolve({ success: true, userType: userType, name: 'Demo User' });
-                } else {
-                    reject(new Error('Invalid credentials. Try: demo/demo'));
-                }
-            }, 1500); // Simulate network delay
         });
     }
     
-    // Load dashboard data from API
-    async function loadDashboardData(userType) {
-        try {
-            const response = await fetch(`/api/mat/dashboard/${userType}`, {
-                headers: {
-                    'Authorization': `Bearer ${authToken}`,
-                    'Content-Type': 'application/json'
+    // Setup logout handler
+    function setupLogoutHandler(logoutBtn) {
+        const logoutButton = logoutBtn || window.domElements?.logoutBtn || document.getElementById('logoutBtn');
+        if (logoutButton) {
+            logoutButton.addEventListener('click', async () => {
+                try {
+                    if (window.authToken) {
+                        await fetch('/api/auth/logout', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${window.authToken}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.error('Logout API error:', error);
+                } finally {
+                    logout();
                 }
             });
-            
-            if (response.ok) {
-                const data = await response.json();
-                // Dashboard data is already being handled by the server
-                // This function can be expanded to update UI elements if needed
-                console.log('Dashboard data loaded:', data);
-            } else {
-                console.error('Failed to load dashboard data');
-            }
-        } catch (error) {
-            console.error('Dashboard data error:', error);
         }
     }
 
-    // Show appropriate dashboard (updated version)
-    function showDashboard(userType, username) {
+    // Show appropriate dashboard (main controller)
+    window.showDashboard = function(userType, username) {
+        const { authSection, memberDashboard, teacherDashboard, logoutBtn } = window.domElements || {};
+        
+        // Fallback to document queries if domElements not available
+        const authSectionEl = authSection || document.getElementById('authSection');
+        const memberDashboardEl = memberDashboard || document.getElementById('memberDashboard');
+        const teacherDashboardEl = teacherDashboard || document.getElementById('teacherDashboard');
+        const logoutBtnEl = logoutBtn || document.getElementById('logoutBtn');
+        
         // Hide auth section
-        authSection.style.display = 'none';
+        if (authSectionEl) authSectionEl.style.display = 'none';
         
         // Show logout button
-        logoutBtn.style.display = 'flex';
+        if (logoutBtnEl) logoutBtnEl.style.display = 'flex';
+        
+        // Update global state
+        window.isLoggedIn = true;
         
         if (userType === 'member') {
-            memberDashboard.style.display = 'block';
-            teacherDashboard.style.display = 'none';
-            document.getElementById('memberName').textContent = username;
+            if (memberDashboardEl) memberDashboardEl.style.display = 'block';
+            if (teacherDashboardEl) teacherDashboardEl.style.display = 'none';
             
-            // Load member dashboard data
-            loadDashboardData('member');
+            const memberNameEl = document.getElementById('memberName');
+            if (memberNameEl) memberNameEl.textContent = username;
+            
+            // Initialize member dashboard
+            if (window.initializeMemberDashboard) {
+                window.initializeMemberDashboard();
+            }
         } else if (userType === 'teacher') {
-            teacherDashboard.style.display = 'block';
-            memberDashboard.style.display = 'none';
-            document.getElementById('teacherName').textContent = username;
+            if (teacherDashboardEl) teacherDashboardEl.style.display = 'block';
+            if (memberDashboardEl) memberDashboardEl.style.display = 'none';
             
-            // Load teacher dashboard data
-            loadDashboardData('teacher');
+            const teacherNameEl = document.getElementById('teacherName');
+            if (teacherNameEl) teacherNameEl.textContent = username;
+            
+            // Initialize teacher dashboard
+            if (window.initializeTeacherDashboard) {
+                window.initializeTeacherDashboard();
+            }
         }
         
         // Scroll to top
@@ -371,59 +173,85 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, index * 100);
             });
         }, 100);
-    }
+        
+        // Animate numbers
+        setTimeout(() => {
+            animateNumbers();
+        }, 800);
+    };
     
-    // Logout function (updated)
+    // Logout function
     function logout() {
-        isLoggedIn = false;
-        currentUser = null;
+        window.isLoggedIn = false;
+        window.currentUser = null;
         
         // Clear stored token
         localStorage.removeItem('authToken');
-        authToken = null;
+        window.authToken = null;
+        
+        const { memberDashboard, teacherDashboard, authSection, logoutBtn } = window.domElements || {};
         
         // Hide dashboards
-        memberDashboard.style.display = 'none';
-        teacherDashboard.style.display = 'none';
+        const memberDashboardEl = memberDashboard || document.getElementById('memberDashboard');
+        const teacherDashboardEl = teacherDashboard || document.getElementById('teacherDashboard');
+        const authSectionEl = authSection || document.getElementById('authSection');
+        const logoutBtnEl = logoutBtn || document.getElementById('logoutBtn');
+        
+        if (memberDashboardEl) memberDashboardEl.style.display = 'none';
+        if (teacherDashboardEl) teacherDashboardEl.style.display = 'none';
         
         // Show auth section
-        authSection.style.display = 'block';
+        if (authSectionEl) authSectionEl.style.display = 'block';
         
         // Hide logout button
-        logoutBtn.style.display = 'none';
+        if (logoutBtnEl) logoutBtnEl.style.display = 'none';
         
         // Clear forms
-        loginForm.reset();
-        registerForm.reset();
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        if (loginForm) loginForm.reset();
+        if (registerForm) registerForm.reset();
         
         // Reset to login mode
+        const authModeBtns = document.querySelectorAll('.auth-mode-btn');
         authModeBtns.forEach(btn => {
             btn.classList.remove('active');
             if (btn.getAttribute('data-mode') === 'login') {
                 btn.classList.add('active');
             }
         });
-        currentAuthMode = 'login';
-        loginForm.style.display = 'block';
-        registerForm.style.display = 'none';
-        authFooterText.innerHTML = 'Forgot your password? <a href="#" id="forgotPassword">Reset here</a>';
+        
+        const loginFormEl = document.getElementById('loginForm');
+        const registerFormEl = document.getElementById('registerForm');
+        if (loginFormEl) loginFormEl.style.display = 'block';
+        if (registerFormEl) registerFormEl.style.display = 'none';
+        
+        const authFooterText = document.getElementById('authFooterText');
+        if (authFooterText) {
+            authFooterText.innerHTML = 'Forgot your password? <a href="#" id="forgotPassword">Reset here</a>';
+        }
         
         // Reset user type to member
+        const userTypeBtns = document.querySelectorAll('.user-type-btn');
         userTypeBtns.forEach(btn => btn.classList.remove('active'));
-        userTypeBtns[0].classList.add('active');
-        currentUserType = 'member';
+        const memberBtn = document.querySelector('.user-type-btn[data-type="member"]');
+        if (memberBtn) memberBtn.classList.add('active');
         
         // Re-attach footer listeners
-        attachFooterListeners();
+        if (window.attachAuthFooterListeners) {
+            window.attachAuthFooterListeners();
+        }
         
         // Scroll to top
         window.scrollTo({ top: 0, behavior: 'smooth' });
         
-        showNotification('Successfully logged out', 'info');
+        if (window.showNotification) {
+            window.showNotification('Successfully logged out', 'info');
+        }
     }
 
     // Notification system
-    function showNotification(message, type = 'info') {
+    window.showNotification = function(message, type = 'info') {
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
         notification.textContent = message;
@@ -473,93 +301,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }, 300);
         }, 4000);
-    }
+    };
     
-    // Dashboard interactivity
-    
-    // Member dashboard interactions
-    if (memberDashboard) {
-        // Material items click handlers
-        document.querySelectorAll('.material-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const materialName = item.querySelector('span').textContent;
-                showNotification(`Opening ${materialName}...`, 'info');
-                
-                // Add click animation
-                item.style.transform = 'scale(0.95)';
-                setTimeout(() => {
-                    item.style.transform = 'scale(1)';
-                }, 150);
-            });
-        });
-    }
-    
-    // Teacher dashboard interactions
-    if (teacherDashboard) {
-        // Action buttons
-        document.querySelectorAll('.action-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const action = btn.textContent.trim();
-                showNotification(`${action} feature coming soon!`, 'info');
-                
-                // Add click animation
-                btn.style.transform = 'scale(0.95)';
-                setTimeout(() => {
-                    btn.style.transform = 'scale(1)';
-                }, 150);
-            });
-        });
-        
-        // Quick action buttons
-        document.querySelectorAll('.quick-action-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const action = btn.querySelector('span').textContent;
-                showNotification(`${action} feature coming soon!`, 'info');
-                
-                // Add click animation
-                btn.style.transform = 'scale(0.95)';
-                setTimeout(() => {
-                    btn.style.transform = 'scale(1)';
-                }, 150);
-            });
-        });
-        
-        // Analytics charts click
-        document.querySelectorAll('.analytics-chart').forEach(chart => {
-            chart.addEventListener('click', () => {
-                showNotification('Detailed analytics coming soon!', 'info');
-                
-                // Add click animation
-                chart.style.transform = 'scale(0.98)';
-                setTimeout(() => {
-                    chart.style.transform = 'scale(1)';
-                }, 150);
-            });
-        });
-    }
-    
-    // Keyboard shortcuts
-    document.addEventListener('keydown', (e) => {
-        // Ctrl/Cmd + L to focus login
-        if ((e.ctrlKey || e.metaKey) && e.key === 'l' && !isLoggedIn) {
-            e.preventDefault();
-            document.getElementById('username').focus();
-        }
-        
-        // Escape to logout (if logged in)
-        if (e.key === 'Escape' && isLoggedIn) {
-            logout();
-        }
-    });
-    
-    // Auto-focus username field on page load
-    setTimeout(() => {
-        if (!isLoggedIn) {
-            document.getElementById('username').focus();
-        }
-    }, 500);
-    
-    // Add some demo data animations
+    // Animate numbers in stats
     function animateNumbers() {
         const statNumbers = document.querySelectorAll('.stat-number');
         statNumbers.forEach(stat => {
@@ -579,38 +323,48 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Start number animations when dashboard is shown
-    const originalShowDashboard = showDashboard;
-    showDashboard = function(userType, username) {
-        originalShowDashboard(userType, username);
-        setTimeout(animateNumbers, 800);
-    };
-    
-    // Easter egg: Konami code
-    let konamiCode = [];
-    const konami = [38, 38, 40, 40, 37, 39, 37, 39, 66, 65]; // ↑↑↓↓←→←→BA
-    
-    document.addEventListener('keydown', (e) => {
-        konamiCode.push(e.keyCode);
-        if (konamiCode.length > konami.length) {
-            konamiCode.shift();
-        }
-        
-        if (konamiCode.join(',') === konami.join(',')) {
-            showNotification('🎉 Konami code activated! Math powers increased!', 'success');
-            konamiCode = [];
+    // Setup keyboard shortcuts
+    function setupKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + L to focus login
+            if ((e.ctrlKey || e.metaKey) && e.key === 'l' && !window.isLoggedIn) {
+                e.preventDefault();
+                const loginField = document.getElementById('loginName');
+                if (loginField) loginField.focus();
+            }
             
-            // Add some fun effects
-            document.body.style.transition = 'all 0.3s ease';
-            document.body.style.transform = 'rotate(1deg)';
-            setTimeout(() => {
-                document.body.style.transform = 'rotate(-1deg)';
+            // Escape to logout (if logged in)
+            if (e.key === 'Escape' && window.isLoggedIn) {
+                logout();
+            }
+        });
+        
+        // Easter egg: Konami code
+        let konamiCode = [];
+        const konami = [38, 38, 40, 40, 37, 39, 37, 39, 66, 65]; // ↑↑↓↓←→←→BA
+        
+        document.addEventListener('keydown', (e) => {
+            konamiCode.push(e.keyCode);
+            if (konamiCode.length > konami.length) {
+                konamiCode.shift();
+            }
+            
+            if (konamiCode.join(',') === konami.join(',')) {
+                window.showNotification('🎉 Konami code activated! Math powers increased!', 'success');
+                konamiCode = [];
+                
+                // Add some fun effects
+                document.body.style.transition = 'all 0.3s ease';
+                document.body.style.transform = 'rotate(1deg)';
                 setTimeout(() => {
-                    document.body.style.transform = 'rotate(0deg)';
+                    document.body.style.transform = 'rotate(-1deg)';
+                    setTimeout(() => {
+                        document.body.style.transform = 'rotate(0deg)';
+                    }, 150);
                 }, 150);
-            }, 150);
-        }
-    });
+            }
+        });
+    }
 });
 
 // Export functions for potential external use
@@ -620,7 +374,10 @@ window.MATPortal = {
         document.dispatchEvent(event);
     },
     showNotification: (message, type) => {
-        // This would be accessible globally if needed
-        console.log(`Notification: ${message} (${type})`);
+        if (window.showNotification) {
+            window.showNotification(message, type);
+        } else {
+            console.log(`Notification: ${message} (${type})`);
+        }
     }
 };

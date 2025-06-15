@@ -1,0 +1,79 @@
+<!-- Authentication Section Component -->
+<section class="auth-section" id="authSection">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="logo-placeholder large">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <h1>MAT Portal</h1>
+                <p>Mu Alpha Theta</p>
+            </div>
+            
+            <!-- Auth Mode Toggle -->
+            <div class="auth-mode-toggle">
+                <button class="auth-mode-btn active" data-mode="login">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Sign In
+                </button>
+                <button class="auth-mode-btn" data-mode="register">
+                    <i class="fas fa-user-plus"></i>
+                    Create Account
+                </button>
+            </div>
+
+            <div class="user-type-selector">
+                <button class="user-type-btn active" data-type="member">
+                    <i class="fas fa-user-graduate"></i>
+                    Member
+                </button>
+                <button class="user-type-btn" data-type="teacher">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    Teacher
+                </button>
+            </div>
+
+            <!-- Login Form -->
+            <form class="auth-form" id="loginForm">
+                <div class="form-group">
+                    <label for="loginName">Full Name</label>
+                    <input type="text" id="loginName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" name="password" required>
+                </div>
+                <button type="submit" class="auth-btn">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Sign In
+                </button>
+            </form>
+
+            <!-- Registration Form -->
+            <form class="auth-form" id="registerForm" style="display: none;">
+                <div class="form-group">
+                    <label for="registerName">Full Name (Username)</label>
+                    <input type="text" id="registerName" name="name" required placeholder="Enter your full name">
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">Password</label>
+                    <input type="password" id="registerPassword" name="password" required>
+                    <small class="password-hint">Must be at least 6 characters long</small>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" required>
+                </div>
+                
+                <button type="submit" class="auth-btn">
+                    <i class="fas fa-user-plus"></i>
+                    Create Account
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                <p id="authFooterText">Forgot your password? <a href="#" id="forgotPassword">Reset here</a></p>
+            </div>
+        </div>
+    </div>
+</section>
