@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAT Portal - Mu Alpha Theta</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/mat.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <div class="logo-placeholder">
+                    <i class="fas fa-infinity"></i>
+                </div>
+                <span class="nav-title">Mu Alpha Theta</span>
+            </div>
+            <div class="nav-menu">
+                <button class="nav-btn" onclick="window.location.href='/'">
+                    <i class="fas fa-home"></i>
+                    Home
+                </button>
+                <button class="nav-btn" id="logoutBtn" style="display: none;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Auth Section -->
+    <section class="auth-section" id="authSection">
+        <div class="auth-container">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <div class="logo-placeholder large">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <h1>MAT Portal</h1>
+                    <p>Mu Alpha Theta</p>
+                </div>
+                
+                <!-- Auth Mode Toggle -->
+                <div class="auth-mode-toggle">
+                    <button class="auth-mode-btn active" data-mode="login">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Sign In
+                    </button>
+                    <button class="auth-mode-btn" data-mode="register">
+                        <i class="fas fa-user-plus"></i>
+                        Create Account
+                    </button>
+                </div>
+
+                <div class="user-type-selector">
+                    <button class="user-type-btn active" data-type="member">
+                        <i class="fas fa-user-graduate"></i>
+                        Member
+                    </button>
+                    <button class="user-type-btn" data-type="teacher">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                        Teacher
+                    </button>
+                </div>
+
+                <!-- Login Form -->
+                <form class="auth-form" id="loginForm">
+                    <div class="form-group">
+                        <label for="loginName">Full Name</label>
+                        <input type="text" id="loginName" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" name="password" required>
+                    </div>
+                    <button type="submit" class="auth-btn">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Sign In
+                    </button>
+                </form>
+
+                <!-- Registration Form -->
+                <form class="auth-form" id="registerForm" style="display: none;">
+                    <div class="form-group">
+                        <label for="registerName">Full Name (Username)</label>
+                        <input type="text" id="registerName" name="name" required placeholder="Enter your full name">
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">Password</label>
+                        <input type="password" id="registerPassword" name="password" required>
+                        <small class="password-hint">Must be at least 6 characters long</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm Password</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" required>
+                    </div>
+                    
+                    <button type="submit" class="auth-btn">
+                        <i class="fas fa-user-plus"></i>
+                        Create Account
+                    </button>
+                </form>
+
+                <div class="auth-footer">
+                    <p id="authFooterText">Forgot your password? <a href="#" id="forgotPassword">Reset here</a></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Member Dashboard -->
+    <section class="dashboard-section member-dashboard" id="memberDashboard" style="display: none;">
+        <div class="dashboard-container">
+            <div class="dashboard-header">
+                <h1>Welcome, <span id="memberName">Student</span></h1>
+                <p>Your mathematics achievement journey continues</p>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <div class="card-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>Progress Overview</h3>
+                        <div class="progress-stats">
+                            <div class="stat">
+                                <span class="stat-number">75%</span>
+                                <span class="stat-label">Course Progress</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">12</span>
+                                <span class="stat-label">Tests Completed</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-card">
+                    <div class="card-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>Upcoming Tests</h3>
+                        <div class="test-list">
+                            <div class="test-item">
+                                <span class="test-name">Algebra II Assessment</span>
+                                <span class="test-date">Dec 20, 2024</span>
+                            </div>
+                            <div class="test-item">
+                                <span class="test-name">Geometry Quiz</span>
+                                <span class="test-date">Dec 25, 2024</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-card">
+                    <div class="card-icon">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>Achievements</h3>
+                        <div class="achievement-list">
+                            <div class="achievement-item">
+                                <i class="fas fa-medal"></i>
+                                <span>Perfect Score on Trigonometry</span>
+                            </div>
+                            <div class="achievement-item">
+                                <i class="fas fa-star"></i>
+                                <span>10 Tests Streak</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-card full-width">
+                    <div class="card-icon">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>Study Materials</h3>
+                        <div class="material-grid">
+                            <div class="material-item">
+                                <i class="fas fa-file-pdf"></i>
+                                <span>Algebra Notes</span>
+                            </div>
+                            <div class="material-item">
+                                <i class="fas fa-video"></i>
+                                <span>Geometry Videos</span>
+                            </div>
+                            <div class="material-item">
+                                <i class="fas fa-calculator"></i>
+                                <span>Practice Problems</span>
+                            </div>
+                            <div class="material-item">
+                                <i class="fas fa-chart-bar"></i>
+                                <span>Formula Sheets</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Teacher Dashboard -->
+    <section class="dashboard-section teacher-dashboard" id="teacherDashboard" style="display: none;">
+        <div class="dashboard-container">
+            <div class="dashboard-header">
+                <h1>Welcome, <span id="teacherName">Teacher</span></h1>
+                <p>Manage your students and assessments</p>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <div class="card-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>Student Overview</h3>
+                        <div class="progress-stats">
+                            <div class="stat">
+                                <span class="stat-number">24</span>
+                                <span class="stat-label">Total Students</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">18</span>
+                                <span class="stat-label">Active This Week</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-card">
+                    <div class="card-icon">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>Assessment Center</h3>
+                        <div class="action-buttons">
+                            <button class="action-btn primary">
+                                <i class="fas fa-plus"></i>
+                                Create Test
+                            </button>
+                            <button class="action-btn secondary">
+                                <i class="fas fa-chart-line"></i>
+                                View Results
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-card">
+                    <div class="card-icon">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>Upcoming Events</h3>
+                        <div class="test-list">
+                            <div class="test-item">
+                                <span class="test-name">Grade Meeting</span>
+                                <span class="test-date">Dec 18, 2024</span>
+                            </div>
+                            <div class="test-item">
+                                <span class="test-name">Parent Conference</span>
+                                <span class="test-date">Dec 22, 2024</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-card full-width">
+                    <div class="card-icon">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>Class Performance Analytics</h3>
+                        <div class="analytics-grid">
+                            <div class="analytics-item">
+                                <div class="analytics-chart">
+                                    <div class="chart-placeholder">
+                                        <i class="fas fa-chart-bar"></i>
+                                        <span>Average Score: 85%</span>
+                                    </div>
+                                </div>
+                                <span>Test Scores</span>
+                            </div>
+                            <div class="analytics-item">
+                                <div class="analytics-chart">
+                                    <div class="chart-placeholder">
+                                        <i class="fas fa-chart-line"></i>
+                                        <span>Trending Up</span>
+                                    </div>
+                                </div>
+                                <span>Progress Trend</span>
+                            </div>
+                            <div class="analytics-item">
+                                <div class="analytics-chart">
+                                    <div class="chart-placeholder">
+                                        <i class="fas fa-chart-pie"></i>
+                                        <span>92% Completion</span>
+                                    </div>
+                                </div>
+                                <span>Assignment Rate</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-card full-width">
+                    <div class="card-icon">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>Quick Actions</h3>
+                        <div class="quick-actions">
+                            <button class="quick-action-btn">
+                                <i class="fas fa-user-plus"></i>
+                                <span>Add Student</span>
+                            </button>
+                            <button class="quick-action-btn">
+                                <i class="fas fa-file-upload"></i>
+                                <span>Upload Materials</span>
+                            </button>
+                            <button class="quick-action-btn">
+                                <i class="fas fa-bell"></i>
+                                <span>Send Notification</span>
+                            </button>
+                            <button class="quick-action-btn">
+                                <i class="fas fa-download"></i>
+                                <span>Export Grades</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="js/mat.js"></script>
+</body>
+</html>
