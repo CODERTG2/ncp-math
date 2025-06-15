@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mu Alpha Theta - NCP Math</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <div class="logo-placeholder">
+                    <i class="fas fa-infinity"></i>
+                </div>
+                <span class="nav-title">Mu Alpha Theta</span>
+            </div>
+            <div class="nav-menu">
+                <button class="nav-btn" id="resourcesBtn">
+                    <i class="fas fa-book"></i>
+                    Resources
+                </button>
+                <button class="nav-btn" id="aiBtn">
+                    <i class="fas fa-robot"></i>
+                    AI
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section with Slideshow -->
+    <section class="hero-section">
+        <div class="slideshow-container">
+            <div class="slide active">
+                <div class="slide-content">
+                    <div class="placeholder-image slide1">
+                        <div class="slide-overlay">
+                            <h1>Welcome to Mu Alpha Theta</h1>
+                            <p>Exploring the infinite possibilities of mathematics</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slide">
+                <div class="slide-content">
+                    <div class="placeholder-image slide2">
+                        <div class="slide-overlay">
+                            <h1>Join Our Mathematical Journey</h1>
+                            <p>Discover, learn, and excel in the world of numbers</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slide-indicators">
+            <span class="indicator active" data-slide="0"></span>
+            <span class="indicator" data-slide="1"></span>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <section class="about-section">
+            <div class="container">
+                <h2>About Us</h2>
+                <p>Mu Alpha Theta is dedicated to advancing mathematical education and fostering a love for mathematics among students. We provide resources, support, and opportunities for mathematical exploration.</p>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section class="contact-section" id="contact">
+            <div class="container">
+                <h2>Contact Us</h2>
+                <div class="contact-grid">
+                    <div class="contact-card">
+                        <div class="contact-icon">
+                            <i class="fab fa-instagram"></i>
+                        </div>
+                        <h3>Follow Us</h3>
+                        <p class="contact-placeholder">@mu_alpha_theta_ncp</p>
+                        <button class="contact-btn">
+                            <i class="fab fa-instagram"></i>
+                            Follow on Instagram
+                        </button>
+                    </div>
+                    <div class="contact-card">
+                        <div class="contact-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <h3>Email Us</h3>
+                        <p class="contact-placeholder">contact@mualpatheta-ncp.org</p>
+                        <button class="contact-btn">
+                            <i class="fas fa-envelope"></i>
+                            Send Email
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- AI Chat Button -->
+    <div class="ai-chat-btn" id="aiChatBtn">
+        <div class="chat-btn-content">
+            <i class="fas fa-comments"></i>
+            <div class="chat-pulse"></div>
+        </div>
+    </div>
+
+    <!-- AI Chat Modal -->
+    <div class="chat-modal" id="chatModal">
+        <div class="chat-header">
+            <h3>AI Assistant</h3>
+            <button class="close-chat" id="closeChatBtn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="message ai-message">
+                <div class="message-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="message-content">
+                    Hello! I'm your AI assistant. How can I help you with mathematics today?
+                </div>
+            </div>
+        </div>
+        <div class="chat-input-container">
+            <input type="text" id="chatInput" placeholder="Type your message..." />
+            <button id="sendMessageBtn">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <script src="js/script.js"></script>
+</body>
+</html>
