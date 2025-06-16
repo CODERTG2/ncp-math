@@ -7,58 +7,143 @@
         </div>
 
         <div class="dashboard-grid">
-            <div class="dashboard-card">
-                <div class="card-icon">
-                    <i class="fas fa-users"></i>
-                </div>
+            <div class="dashboard-card video-requests-card">
                 <div class="card-content">
-                    <h3>Student Overview</h3>
-                    <div class="progress-stats">
-                        <div class="stat">
-                            <span class="stat-number">24</span>
-                            <span class="stat-label">Total Students</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-number">18</span>
-                            <span class="stat-label">Active This Week</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="dashboard-card">
-                <div class="card-icon">
-                    <i class="fas fa-clipboard-list"></i>
-                </div>
-                <div class="card-content">
-                    <h3>Assessment Center</h3>
-                    <div class="action-buttons">
-                        <button class="action-btn primary">
+                    <div class="card-header-actions">
+                        <h3>Video Requests</h3>
+                        <button id="addRequestBtn" class="action-btn-small" title="Add New Request">
                             <i class="fas fa-plus"></i>
-                            Create Test
                         </button>
-                        <button class="action-btn secondary">
-                            <i class="fas fa-chart-line"></i>
-                            View Results
-                        </button>
+                    </div>
+                    
+                    <div class="status-legend">
+                        <div class="status-item">
+                            <span class="status-indicator not-started"></span>
+                            <span>Not Started</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-indicator in-progress"></span>
+                            <span>In Progress</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-indicator completed"></span>
+                            <span>Completed</span>
+                        </div>
+                    </div>
+                    
+                    <div class="request-list" id="requestList">
+                        <!-- Requests will be loaded dynamically -->
+                        <div class="loading-placeholder">Loading requests...</div>
+                    </div>
+                    
+                    <!-- Add/Edit Request Modal -->
+                    <div class="request-modal" id="requestModal">
+                        <div class="request-modal-content">
+                            <div class="request-modal-header">
+                                <h4 id="requestModalTitle">Add New Video Request</h4>
+                                <button class="close-modal-btn" id="closeRequestModal">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <form id="requestForm">
+                                <input type="hidden" id="requestId" value="">
+                                <div class="form-group">
+                                    <label for="requestTitle">Title</label>
+                                    <input type="text" id="requestTitle" placeholder="Video title or topic" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="requestDescription">Description</label>
+                                    <textarea id="requestDescription" rows="3" placeholder="Describe what should be covered in the video"></textarea>
+                                </div>
+                                <div class="request-form-actions">
+                                    <button type="button" class="action-btn secondary" id="cancelRequestBtn">Cancel</button>
+                                    <button type="submit" class="action-btn primary">Submit Request</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="dashboard-card">
+                <div class="card-icon">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                </div>
+                <div class="card-content">
+                    <h3>Tutor Attendance</h3>
+                    <div class="tutor-attendance">
+                        <div class="attendance-stats">
+                            <div class="stat">
+                                <span class="stat-number">12</span>
+                                <span class="stat-label">Sessions This Week</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">93%</span>
+                                <span class="stat-label">Attendance Rate</span>
+                            </div>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="action-btn primary">
+                                <i class="fas fa-user-check"></i>
+                                Record Attendance
+                            </button>
+                            <button class="action-btn secondary">
+                                <i class="fas fa-history"></i>
+                                View History
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-card upcoming-events-card">
                 <div class="card-icon">
                     <i class="fas fa-calendar-alt"></i>
                 </div>
                 <div class="card-content">
-                    <h3>Upcoming Events</h3>
-                    <div class="test-list">
-                        <div class="test-item">
-                            <span class="test-name">Grade Meeting</span>
-                            <span class="test-date">Dec 18, 2024</span>
-                        </div>
-                        <div class="test-item">
-                            <span class="test-name">Parent Conference</span>
-                            <span class="test-date">Dec 22, 2024</span>
+                    <div class="card-header-actions">
+                        <h3>Upcoming Events</h3>
+                        <button id="addEventBtn" class="action-btn-small" title="Add New Event">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <div class="event-list" id="eventList">
+                        <!-- Events will be loaded dynamically -->
+                        <div class="loading-placeholder">Loading events...</div>
+                    </div>
+
+                    <!-- Add/Edit Event Modal -->
+                    <div class="event-modal" id="eventModal">
+                        <div class="event-modal-content">
+                            <div class="event-modal-header">
+                                <h4 id="eventModalTitle">Add New Event</h4>
+                                <button class="close-modal-btn" id="closeEventModal">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <form id="eventForm">
+                                <input type="hidden" id="eventId" value="">
+                                <div class="form-group">
+                                    <label for="eventName">Event Name</label>
+                                    <input type="text" id="eventName" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="eventDate">Date</label>
+                                    <input type="date" id="eventDate" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="eventTime">Time</label>
+                                    <input type="time" id="eventTime" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="eventDescription">Description (Optional)</label>
+                                    <textarea id="eventDescription" rows="3"></textarea>
+                                </div>
+                                <div class="event-form-actions">
+                                    <button type="button" class="action-btn secondary" id="cancelEventBtn">Cancel</button>
+                                    <button type="submit" class="action-btn primary">Save Event</button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
