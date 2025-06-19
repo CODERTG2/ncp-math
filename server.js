@@ -1,28 +1,25 @@
-require('dotenv').config();
-const express = require('express');
-const path = require('path');
-const mongoose = require('mongoose');
-const cors = require('cors');
+import 'dotenv/config';
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import connectWithMongoose from './middleware/mongoose-db.js';
 
-// Import routes
-const authRoutes = require('./routes/auth');
-const { authenticateToken, authorizeRoles } = require('./middleware/auth');
+// Initialize mongoose connection
+connectWithMongoose();
+
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Import middleware
+import { authenticateToken, authorizeRoles } from './middleware/auth.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-})
-.then(() => {
-    console.log('Connected to MongoDB successfully');
-})
-.catch((error) => {
-    console.error('MongoDB connection error:', error);
-    process.exit(1);
-});
+
 
 // CORS configuration
 app.use(cors({
@@ -49,80 +46,21 @@ app.get('/mat', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'mat.html'));
 });
 
+// Import routes
+import authRoutes from './routes/auth.js';
+import videoRoutes from './routes/videos.js';
+import userRoutes from './routes/users.js';
+import chatRoutes from './routes/chat.js';
+import matRoutes from './routes/mat.js';
+import calendarRoutes from './routes/calendar.js';
+
 // API Routes
 app.use('/api/auth', authRoutes);
-
-// API endpoint for AI chat (placeholder)
-app.post('/api/chat', authenticateToken, (req, res) => {
-    const { message } = req.body;
-    // Placeholder response
-    res.json({ 
-        response: `Hello ${req.user.name}, you said: "${message}". This is a placeholder AI response!` 
-    });
-});
-
-// Legacy login endpoint - redirect to new auth system
-app.post('/api/mat/login', (req, res) => {
-    res.status(410).json({
-        success: false,
-        message: 'This endpoint has been deprecated. Please use /api/auth/login instead.',
-        newEndpoint: '/api/auth/login'
-    });
-});
-
-// Get user dashboard data
-app.get('/api/mat/dashboard/:userType', authenticateToken, authorizeRoles('member', 'teacher'), (req, res) => {
-    const { userType } = req.params;
-    const user = req.user;
-    
-    // Ensure user can only access their own dashboard type
-    if (user.userType !== userType) {
-        return res.status(403).json({
-            success: false,
-            message: 'Access denied. Cannot access this dashboard type.'
-        });
-    }
-    
-    if (userType === 'member') {
-        res.json({
-            progress: 75,
-            testsCompleted: 12,
-            upcomingTests: [
-                { name: 'Algebra II Assessment', date: '2024-12-20' },
-                { name: 'Geometry Quiz', date: '2024-12-25' }
-            ],
-            achievements: [
-                { icon: 'medal', title: 'Perfect Score on Trigonometry' },
-                { icon: 'star', title: '10 Tests Streak' }
-            ],
-            materials: [
-                { icon: 'file-pdf', name: 'Algebra Notes' },
-                { icon: 'video', name: 'Geometry Videos' },
-                { icon: 'calculator', name: 'Practice Problems' },
-                { icon: 'chart-bar', name: 'Formula Sheets' }
-            ]
-        });
-    } else if (userType === 'teacher') {
-        res.json({
-            totalStudents: 24,
-            activeStudents: 18,
-            upcomingEvents: [
-                { name: 'Grade Meeting', date: '2024-12-18' },
-                { name: 'Parent Conference', date: '2024-12-22' }
-            ],
-            analytics: {
-                averageScore: 85,
-                trend: 'up',
-                completionRate: 92
-            }
-        });
-    } else {
-        res.status(400).json({ 
-            success: false,
-            error: 'Invalid user type' 
-        });
-    }
-});
+app.use('/api/video-requests', videoRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/mat', matRoutes);
+app.use('/api/calendar', calendarRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

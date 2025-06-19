@@ -1,7 +1,7 @@
-const express = require('express');
-const { body, validationResult } = require('express-validator');
-const User = require('../models/User');
-const { generateToken, authenticateToken } = require('../middleware/auth');
+import express from 'express';
+import { body, validationResult } from 'express-validator';
+import User from '../models/User.js';
+import { generateToken, authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -281,4 +281,13 @@ router.post('/logout', authenticateToken, async (req, res) => {
     }
 });
 
-module.exports = router;
+// Validate token (simple endpoint for client-side token verification)
+router.get('/validate-token', authenticateToken, (req, res) => {
+    res.status(200).json({
+        success: true,
+        message: 'Token is valid',
+        userId: req.user._id
+    });
+});
+
+export default router;

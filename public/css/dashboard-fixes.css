@@ -1,0 +1,370 @@
+/* Dashboard Card Icon Fixes */
+.dashboard-card .card-icon {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 0;
+    box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+}
+
+/* Remove purple outline from Upcoming Events card */
+.upcoming-events-card {
+    border: 1px solid #e5e7eb !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+    transition: box-shadow 0.3s ease !important;
+}
+
+.upcoming-events-card:hover {
+    transform: none !important; /* Prevent the card from moving up */
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Fix for all dashboard cards that shouldn't move on hover */
+.dashboard-card.upcoming-events-card:hover,
+.upcoming-events-card:hover {
+    transform: none !important; /* Override all transform properties */
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1) !important;
+    transition: box-shadow 0.3s ease !important;
+}
+
+/* Ensure all cards have consistent padding for the icons */
+.dashboard-card {
+    padding-top: 20px;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-bottom: 20px;
+    position: relative;
+}
+
+/* Add proper spacing for card content */
+.dashboard-card .card-content {
+    margin-top: 60px;
+}
+
+/* Style the header text consistently */
+.card-header-actions h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #333;
+}
+
+/* Fix the spacing between icon and content */
+.dashboard-card .card-content {
+    width: 100%;
+}
+
+/* Fix the placeholder text alignment */
+.dashboard-card .empty-state,
+.dashboard-card .loading-placeholder {
+    text-align: center;
+    padding: 20px;
+    color: #6b7280;
+}
+
+/* Make sure action buttons are positioned correctly */
+.action-btn-small {
+    width: 32px;
+    height: 32px;
+}
+
+/* Video Request Modal Styles */
+.request-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.request-modal.active {
+    display: flex;
+}
+
+/* Animations for the modal */
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes modalBackdropFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.request-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.request-modal.active {
+    display: flex;
+    animation: modalBackdropFadeIn 0.2s ease-out;
+}
+
+.request-modal-content {
+    background-color: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+.request-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 20px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.request-modal-header h4 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.close-modal-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: #6b7280;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.close-modal-btn:hover {
+    color: #333;
+}
+
+#requestForm {
+    padding: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: #4b5563;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.95rem;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+.request-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.action-btn {
+    padding: 8px 16px;
+    font-weight: 500;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.action-btn.primary {
+    background-color: #4f46e5;
+    color: white;
+}
+
+.action-btn.primary:hover {
+    background-color: #4338ca;
+}
+
+.action-btn.secondary {
+    background-color: #e5e7eb;
+    color: #4b5563;
+}
+
+.action-btn.secondary:hover {
+    background-color: #d1d5db;
+}
+
+/* Request List Styles */
+.request-list {
+    margin-top: 15px;
+}
+
+.request-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    background-color: #f9fafb;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.request-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+}
+
+.request-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.status-indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.status-indicator.not-started {
+    background-color: #f59e0b;
+}
+
+.status-indicator.in-progress {
+    background-color: #3b82f6;
+}
+
+.status-indicator.completed {
+    background-color: #10b981;
+}
+
+.request-content {
+    flex: 1;
+}
+
+.request-title {
+    font-weight: 600;
+    margin-bottom: 2px;
+    color: #1f2937;
+}
+
+.request-requester {
+    font-size: 0.85rem;
+    color: #6b7280;
+}
+
+.request-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.request-action-btn {
+    background: none;
+    border: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #6b7280;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.request-action-btn:hover {
+    background-color: #e5e7eb;
+    color: #4b5563;
+}
+
+.request-action-btn.edit:hover {
+    color: #3b82f6;
+}
+
+.request-action-btn.delete:hover {
+    color: #ef4444;
+}
+
+/* Status Legend */
+.status-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 15px;
+    padding: 10px 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    font-size: 0.85rem;
+    color: #6b7280;
+}
+
+/* Card Header Actions */
+.card-header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.action-btn-small {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background-color: #f3f4f6;
+    border: none;
+    color: #4b5563;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.action-btn-small:hover {
+    background-color: #4f46e5;
+    color: white;
+    transform: scale(1.05);
+}

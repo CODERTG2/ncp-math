@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema({
     name: {
@@ -37,7 +37,6 @@ const userSchema = new mongoose.Schema({
 });
 
 // Index for efficient queries
-userSchema.index({ name: 1 });
 userSchema.index({ userType: 1 });
 
 // Hash password before saving
@@ -72,4 +71,5 @@ userSchema.methods.getPublicProfile = function() {
     return user;
 };
 
-module.exports = mongoose.model('User', userSchema);
+const User = mongoose.model('User', userSchema);
+export default User;

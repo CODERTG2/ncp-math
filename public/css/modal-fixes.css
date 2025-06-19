@@ -1,0 +1,123 @@
+/* Fix for event modal positioning and scrolling - overriding defaults */
+.event-modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    z-index: 1050 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 0.3s ease !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+}
+
+.event-modal.active {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+.event-modal-content {
+    background: white !important;
+    border-radius: 16px !important;
+    width: 90% !important;
+    max-width: 500px !important;
+    max-height: 90vh !important; /* Limit height to 90% of viewport height */
+    overflow-y: auto !important; /* Enable vertical scrolling */
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
+    position: relative !important; /* Keep position relative for proper scrolling */
+    transform: none !important; /* Remove all transforms */
+    transition: none !important; /* Disable transitions that might cause jumping */
+}
+
+/* Prevent modal from jumping around on focus */
+.event-modal-content:focus,
+.event-modal-content input:focus,
+.event-modal-content textarea:focus,
+.event-modal-content button:focus {
+    outline: none !important; /* Remove default focus outline */
+    box-shadow: none !important; /* Remove any focus box-shadow */
+    transform: none !important; /* Ensure no transforms are applied */
+}
+
+/* Specific overrides for form inputs */
+#eventForm input,
+#eventForm textarea,
+#eventForm button {
+    transform: none !important; /* Force no transform */
+    position: static !important; /* Ensure static positioning */
+    transition: none !important; /* Disable transitions */
+}
+
+/* Prevent any hover effects that might be causing issues */
+.event-modal-content:hover {
+    transform: none !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Disable any animations that might be causing modal shifting */
+.event-modal *,
+.event-modal-content * {
+    animation: none !important;
+}
+
+/* Form fields styling to prevent UI issues */
+#eventForm .form-group {
+    margin-bottom: 1rem !important;
+    position: static !important;
+}
+
+#eventForm input,
+#eventForm textarea {
+    width: 100% !important;
+    padding: 0.75rem !important;
+    border: 1px solid #ddd !important;
+    border-radius: 8px !important;
+    font-size: 14px !important;
+}
+
+/* Ensure the form stays put when fields are focused */
+#eventForm {
+    padding: 1.5rem !important;
+    position: relative !important;
+    transform: none !important;
+    will-change: auto !important;
+}
+
+/* Ensure form elements don't cause layout shifts */
+.event-form-actions {
+    position: sticky !important;
+    bottom: 0 !important;
+    background: white !important;
+    padding: 1rem !important;
+    border-top: 1px solid #e5e7eb !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 10px !important;
+}
+
+/* Fix modal header */
+.event-modal-header {
+    position: sticky !important;
+    top: 0 !important;
+    background: white !important;
+    z-index: 5 !important;
+}
+
+/* Fix for event modal on smaller screens */
+@media (max-height: 600px) {
+    .event-modal-content {
+        max-height: 95vh;
+        margin: 10px 0;
+    }
+}
+
+/* Fix for the event items UI */
+.event-list {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: 10px;
+}
