@@ -5,6 +5,7 @@ import MongoStore from 'connect-mongo';
 import dotenv from 'dotenv';
 import connectDB from './config/database.js';
 import authRoutes from './routes/auth.js';
+import apiRoutes from './routes/api.js';
 import { attachUser, isAuthenticated, hasRole } from './middleware/auth.js';
 
 dotenv.config();
@@ -46,6 +47,9 @@ app.use(attachUser);
 
 // Routes
 app.use('/auth', authRoutes);
+
+// API routes
+app.use('/api', apiRoutes);
 
 // Public routes
 app.get('/', (req, res) => {
