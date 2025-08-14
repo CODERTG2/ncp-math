@@ -121,27 +121,27 @@
                 </div>
             </div>
             <!-- Quick Stats -->
-            <div class="auth-card" style="margin-top: 2rem;">
+            <div class="auth-card stats-card" style="margin-top: 2rem;">
                 <div class="auth-body">
-                    <h3 style="text-align: center; color: var(--gray-800); margin-bottom: 1.5rem;">Quick Stats</h3>
+                    <h3 style="text-align: center;">Quick Stats</h3>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
-                        <div style="text-align: center; padding: 1rem; background: var(--gray-50); border-radius: var(--radius-lg);">
-                            <div style="font-size: 2rem; font-weight: 700; color: var(--mu-blue); margin-bottom: 0.5rem;">0</div>
-                            <div style="color: var(--gray-600);">Sessions Attended</div>
+                        <div class="stat-item" style="text-align: center;">
+                            <div class="stat-number">0</div>
+                            <div class="stat-label">Sessions Attended</div>
                         </div>
-                        <div style="text-align: center; padding: 1rem; background: var(--gray-50); border-radius: var(--radius-lg);">
-                            <div style="font-size: 2rem; font-weight: 700; color: var(--emerald); margin-bottom: 0.5rem;">0</div>
-                            <div style="color: var(--gray-600);">Sessions Signed Up</div>
+                        <div class="stat-item" style="text-align: center;">
+                            <div class="stat-number">0</div>
+                            <div class="stat-label">Sessions Signed Up</div>
                         </div>
-                        <div style="text-align: center; padding: 1rem; background: var(--gray-50); border-radius: var(--radius-lg);">
-                            <div style="font-size: 2rem; font-weight: 700; color: var(--mu-gold); margin-bottom: 0.5rem;">0</div>
-                            <div style="color: var(--gray-600);">Hours Tutored</div>
+                        <div class="stat-item" style="text-align: center;">
+                            <div class="stat-number">0</div>
+                            <div class="stat-label">Hours Tutored</div>
                         </div>
-                        <div style="text-align: center; padding: 1rem; background: var(--gray-50); border-radius: var(--radius-lg);">
-                            <div style="font-size: 2rem; font-weight: 700; color: var(--purple); margin-bottom: 0.5rem;">
+                        <div class="stat-item" style="text-align: center;">
+                            <div class="stat-number">
                                 <%= Math.floor((Date.now() - new Date(user.createdAt)) / (1000 * 60 * 60 * 24)) %>
                             </div>
-                            <div style="color: var(--gray-600);">Days Active</div>
+                            <div class="stat-label">Days Active</div>
                         </div>
                     </div>
                 </div>
