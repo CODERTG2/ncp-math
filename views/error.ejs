@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - Mu Alpha Theta</title>
+    <link rel="stylesheet" href="/css/mat.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <div class="logo-placeholder">
+                    <i class="fas fa-infinity"></i>
+                </div>
+                <span class="nav-title">Mu Alpha Theta</span>
+            </div>
+            <div class="nav-menu">
+                <button class="nav-btn" onclick="window.location.href='/'">
+                    <i class="fas fa-home"></i>
+                    Home
+                </button>
+                <% if (typeof user !== 'undefined' && user) { %>
+                    <button class="nav-btn" onclick="window.location.href='/dashboard/<%= user.role %>'">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Dashboard
+                    </button>
+                    <button class="nav-btn" onclick="window.location.href='/logout'">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </button>
+                <% } else { %>
+                    <button class="nav-btn" onclick="window.location.href='/mat'">
+                        <i class="fas fa-graduation-cap"></i>
+                        MAT Portal
+                    </button>
+                <% } %>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="mat-portal">
+        <div class="auth-container">
+            <div class="auth-card">
+                <!-- Header -->
+                <div class="auth-header" style="background: linear-gradient(135deg, var(--auth-error), #f87171);">
+                    <div class="auth-logo">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h1 class="auth-title"><%= title %></h1>
+                    <p class="auth-subtitle">Something went wrong</p>
+                </div>
+
+                <!-- Body -->
+                <div class="auth-body" style="text-align: center;">
+                    <p style="color: var(--gray-600); font-size: 1.1rem; margin-bottom: 2rem;">
+                        <%= message %>
+                    </p>
+                    
+                    <button class="auth-button" onclick="window.location.href='/'">
+                        <i class="fas fa-home"></i>
+                        Go Home
+                    </button>
+                    
+                    <button class="auth-button-secondary" onclick="history.back()">
+                        <i class="fas fa-arrow-left"></i>
+                        Go Back
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript -->
+    <script>
+        // Navbar scroll effect
+        window.addEventListener('scroll', function() {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+    </script>
+</body>
+</html>

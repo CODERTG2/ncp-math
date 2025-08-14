@@ -1,67 +1,127 @@
-import 'dotenv/config';
 import express from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import mongoose from 'mongoose';
 import cors from 'cors';
-import connectWithMongoose from './middleware/mongoose-db.js';
+import session from 'express-session';
+import MongoStore from 'connect-mongo';
+import dotenv from 'dotenv';
+import connectDB from './config/database.js';
+import authRoutes from './routes/auth.js';
+import { attachUser, isAuthenticated, hasRole } from './middleware/auth.js';
 
-// Initialize mongoose connection
-connectWithMongoose();
+dotenv.config();
 
-// Get __dirname equivalent in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Import middleware
-import { authenticateToken, authorizeRoles } from './middleware/auth.js';
+// Connect to MongoDB
+connectDB();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-
-// CORS configuration
-app.use(cors({
-    origin: process.env.NODE_ENV === 'production' 
-        ? ['https://your-domain.com'] 
-        : ['http://localhost:3000', 'http://127.0.0.1:3000'],
-    credentials: true
+// Session configuration
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'your-secret-key-here',
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGODB_URI
+    }),
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    }
 }));
 
-// Serve static files from public directory
+// Static files
 app.use(express.static('public'));
 
-// Parse JSON bodies
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// View engine
+app.set('view engine', 'ejs');
+app.set('views', './views');
 
-// Serve the main page
+// Attach user to all routes
+app.use(attachUser);
+
+// Routes
+app.use('/auth', authRoutes);
+
+// Public routes
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.render("home");
 });
 
-// Serve the MAT portal page
+app.get('/resources', (req, res) => {
+  res.json({ message: "Coming soon!" });
+});
+
+app.get('/ai', (req, res) => {
+  res.json({ message: "Coming soon!" });
+});
+
+// MAT Portal (Login/Register page)
 app.get('/mat', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'mat.html'));
+  res.render("mat", {
+    error: req.query.error,
+    success: req.query.success,
+    warning: req.query.warning
+  });
 });
 
-// Import routes
-import authRoutes from './routes/auth.js';
-import videoRoutes from './routes/videos.js';
-import userRoutes from './routes/users.js';
-import chatRoutes from './routes/chat.js';
-import matRoutes from './routes/mat.js';
-import calendarRoutes from './routes/calendar.js';
+// Protected dashboard routes
+app.get('/dashboard/student', isAuthenticated, hasRole(['student']), (req, res) => {
+  res.render('student-dashboard', {
+    user: req.user,
+    title: 'Student Dashboard'
+  });
+});
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/video-requests', videoRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/chat', chatRoutes);
-app.use('/api/mat', matRoutes);
-app.use('/api/calendar', calendarRoutes);
+app.get('/dashboard/teacher', isAuthenticated, hasRole(['teacher']), (req, res) => {
+  res.render('teacher-dashboard', {
+    user: req.user,
+    title: 'Teacher Dashboard'
+  });
+});
+
+// Logout route (redirect)
+app.get('/logout', (req, res) => {
+  res.redirect('/auth/logout');
+});
+
+// Email verification route
+app.get('/verify-email/:token', (req, res) => {
+  res.redirect(`/auth/verify-email/${req.params.token}`);
+});
+
+// Password reset routes
+app.get('/reset-password/:token', (req, res) => {
+  res.redirect(`/auth/reset-password/${req.params.token}`);
+});
+
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).render('error', {
+    title: 'Page Not Found',
+    message: 'The page you are looking for does not exist.',
+    user: res.locals.user
+  });
+});
+
+// Error handler
+app.use((error, req, res, next) => {
+  console.error(error);
+  res.status(500).render('error', {
+    title: 'Server Error',
+    message: 'Something went wrong on our end.',
+    user: res.locals.user
+  });
+});
+
+const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
+  console.log(`Visit http://localhost:${PORT} to see the application`);
+  console.log(`Visit http://localhost:${PORT}/mat to access the authentication portal`);
 });

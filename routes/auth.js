@@ -1,293 +1,369 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
+import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import { generateToken, authenticateToken } from '../middleware/auth.js';
+import emailService from '../services/emailService.js';
+import { redirectIfAuthenticated } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Validation middleware
-const validateRegistration = [
-    body('name')
-        .isLength({ min: 3, max: 50 })
-        .withMessage('Name must be between 3 and 50 characters')
-        .matches(/^[a-zA-Z0-9\s_.-]+$/)
-        .withMessage('Name can only contain letters, numbers, spaces, underscores, dots, and hyphens'),
-    body('password')
-        .isLength({ min: 6 })
-        .withMessage('Password must be at least 6 characters long'),
-    body('userType')
-        .isIn(['member', 'teacher'])
-        .withMessage('User type must be either member or teacher')
+// Validation rules
+const registerValidation = [
+  body('firstName')
+    .trim()
+    .isLength({ min: 1, max: 50 })
+    .withMessage('First name is required and must be between 1-50 characters'),
+  
+  body('lastName')
+    .trim()
+    .isLength({ min: 1, max: 50 })
+    .withMessage('Last name is required and must be between 1-50 characters'),
+  
+  body('username')
+    .trim()
+    .isLength({ min: 3, max: 30 })
+    .withMessage('Username must be between 3-30 characters')
+    .matches(/^[a-zA-Z0-9_]+$/)
+    .withMessage('Username can only contain letters, numbers, and underscores'),
+  
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Please enter a valid email address'),
+  
+  body('password')
+    .isLength({ min: 8 })
+    .withMessage('Password must be at least 8 characters long'),
+  
+  body('confirmPassword')
+    .custom((value, { req }) => {
+      if (value !== req.body.password) {
+        throw new Error('Passwords do not match');
+      }
+      return true;
+    }),
+  
+  body('role')
+    .isIn(['student', 'teacher'])
+    .withMessage('Role must be either student or teacher')
 ];
 
-const validateLogin = [
-    body('name')
-        .notEmpty()
-        .withMessage('Name is required'),
-    body('password')
-        .notEmpty()
-        .withMessage('Password is required')
+const loginValidation = [
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Please enter a valid email address'),
+  
+  body('password')
+    .notEmpty()
+    .withMessage('Password is required')
 ];
 
-// Register new user
-router.post('/register', validateRegistration, async (req, res) => {
-    try {
-        // Check for validation errors
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({
-                success: false,
-                message: 'Validation failed',
-                errors: errors.array()
-            });
-        }
+const forgotPasswordValidation = [
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Please enter a valid email address')
+];
 
-        const { name, password, userType } = req.body;
+const resetPasswordValidation = [
+  body('password')
+    .isLength({ min: 8 })
+    .withMessage('Password must be at least 8 characters long'),
+  
+  body('confirmPassword')
+    .custom((value, { req }) => {
+      if (value !== req.body.password) {
+        throw new Error('Passwords do not match');
+      }
+      return true;
+    })
+];
 
-        // Check if user already exists
-        const existingUser = await User.findOne({ name });
-
-        if (existingUser) {
-            return res.status(400).json({
-                success: false,
-                message: 'Name already exists'
-            });
-        }
-
-        // Create new user
-        const user = new User({
-            name,
-            password,
-            userType
-        });
-
-        await user.save();
-
-        // Generate token
-        const token = generateToken(user._id);
-
-        // Update last login
-        user.lastLogin = new Date();
-        await user.save();
-
-        res.status(201).json({
-            success: true,
-            message: 'Account created successfully',
-            user: user.getPublicProfile(),
-            token
-        });
-
-    } catch (error) {
-        console.error('Registration error:', error);
-        
-        if (error.code === 11000) {
-            // Duplicate key error
-            const field = Object.keys(error.keyPattern)[0];
-            return res.status(400).json({
-                success: false,
-                message: `${field} already exists`
-            });
-        }
-
-        res.status(500).json({
-            success: false,
-            message: 'Internal server error during registration'
-        });
+// Register route
+router.post('/register', registerValidation, async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      const errorMessages = errors.array().map(error => error.msg);
+      return res.redirect(`/mat?error=${encodeURIComponent(errorMessages.join('. '))}`);
     }
-});
 
-// Login user
-router.post('/login', validateLogin, async (req, res) => {
-    try {
-        // Check for validation errors
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({
-                success: false,
-                message: 'Validation failed',
-                errors: errors.array()
-            });
-        }
+    const { firstName, lastName, username, email, password, role } = req.body;
 
-        const { name, password } = req.body;
-
-        // Find user by name
-        const user = await User.findOne({
-            name,
-            isActive: true
-        });
-
-        if (!user) {
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid credentials'
-            });
-        }
-
-        // Check password
-        const isPasswordValid = await user.comparePassword(password);
-        if (!isPasswordValid) {
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid credentials'
-            });
-        }
-
-        // Generate token
-        const token = generateToken(user._id);
-
-        // Update last login
-        user.lastLogin = new Date();
-        await user.save();
-
-        res.json({
-            success: true,
-            message: 'Login successful',
-            user: user.getPublicProfile(),
-            token
-        });
-
-    } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Internal server error during login'
-        });
-    }
-});
-
-// Get current user profile
-router.get('/profile', authenticateToken, async (req, res) => {
-    try {
-        res.json({
-            success: true,
-            user: req.user.getPublicProfile()
-        });
-    } catch (error) {
-        console.error('Profile error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching profile'
-        });
-    }
-});
-
-// Update user profile
-router.put('/profile', authenticateToken, [
-    body('name')
-        .optional()
-        .isLength({ min: 2, max: 50 })
-        .withMessage('Name must be between 2 and 50 characters')
-], async (req, res) => {
-    try {
-        // Check for validation errors
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({
-                success: false,
-                message: 'Validation failed',
-                errors: errors.array()
-            });
-        }
-
-        const { name } = req.body;
-        const user = req.user;
-
-        // Update user fields
-        if (name) user.name = name;
-
-        await user.save();
-
-        res.json({
-            success: true,
-            message: 'Profile updated successfully',
-            user: user.getPublicProfile()
-        });
-
-    } catch (error) {
-        console.error('Profile update error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error updating profile'
-        });
-    }
-});
-
-// Change password
-router.put('/change-password', authenticateToken, [
-    body('currentPassword')
-        .notEmpty()
-        .withMessage('Current password is required'),
-    body('newPassword')
-        .isLength({ min: 6 })
-        .withMessage('New password must be at least 6 characters long')
-], async (req, res) => {
-    try {
-        // Check for validation errors
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({
-                success: false,
-                message: 'Validation failed',
-                errors: errors.array()
-            });
-        }
-
-        const { currentPassword, newPassword } = req.body;
-        const user = await User.findById(req.user._id);
-
-        // Verify current password
-        const isCurrentPasswordValid = await user.comparePassword(currentPassword);
-        if (!isCurrentPasswordValid) {
-            return res.status(400).json({
-                success: false,
-                message: 'Current password is incorrect'
-            });
-        }
-
-        // Update password
-        user.password = newPassword;
-        await user.save();
-
-        res.json({
-            success: true,
-            message: 'Password changed successfully'
-        });
-
-    } catch (error) {
-        console.error('Password change error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error changing password'
-        });
-    }
-});
-
-// Logout (client-side token removal, but we can track it server-side if needed)
-router.post('/logout', authenticateToken, async (req, res) => {
-    try {
-        // In a more complex setup, you might want to blacklist the token
-        // For now, we'll just return success as the client will remove the token
-        res.json({
-            success: true,
-            message: 'Logged out successfully'
-        });
-    } catch (error) {
-        console.error('Logout error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error during logout'
-        });
-    }
-});
-
-// Validate token (simple endpoint for client-side token verification)
-router.get('/validate-token', authenticateToken, (req, res) => {
-    res.status(200).json({
-        success: true,
-        message: 'Token is valid',
-        userId: req.user._id
+    // Check if user already exists
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username }]
     });
+
+    if (existingUser) {
+      const field = existingUser.email === email ? 'email' : 'username';
+      return res.redirect(`/mat?error=${encodeURIComponent(`This ${field} is already registered`)}`);
+    }
+
+    // Create new user
+    const user = new User({
+      firstName,
+      lastName,
+      username,
+      email,
+      password,
+      role
+    });
+
+    // Generate email verification token
+    const verificationToken = user.generateEmailVerificationToken();
+    await user.save();
+
+    // Send verification email
+    try {
+      await emailService.sendVerificationEmail(user, verificationToken);
+      res.redirect(`/mat?success=${encodeURIComponent('Registration successful! Please check your email to verify your account.')}`);
+    } catch (emailError) {
+      console.error('Email sending failed:', emailError);
+      
+      // In development mode or if no email service, auto-verify the user
+      if (process.env.NODE_ENV === 'development' || !process.env.EMAIL_USER) {
+        user.isEmailVerified = true;
+        user.emailVerificationToken = null;
+        user.emailVerificationExpires = null;
+        await user.save();
+        
+        res.redirect(`/mat?success=${encodeURIComponent('Registration successful! You can now log in.')}`);
+      } else {
+        res.redirect(`/mat?warning=${encodeURIComponent('Account created but verification email failed to send. Please contact support.')}`);
+      }
+    }
+
+  } catch (error) {
+    console.error('Registration error:', error);
+    
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyValue)[0];
+      return res.redirect(`/mat?error=${encodeURIComponent(`This ${field} is already registered`)}`);
+    }
+    
+    if (error.name === 'ValidationError') {
+      const errorMessages = Object.values(error.errors).map(err => err.message);
+      return res.redirect(`/mat?error=${encodeURIComponent(errorMessages.join('. '))}`);
+    }
+    
+    res.redirect(`/mat?error=${encodeURIComponent('Registration failed. Please try again.')}`);
+  }
+});
+
+// Login route
+router.post('/login', loginValidation, async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      const errorMessages = errors.array().map(error => error.msg);
+      return res.redirect(`/mat?error=${encodeURIComponent(errorMessages.join('. '))}`);
+    }
+
+    const { email, password } = req.body;
+
+    // Find user
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.redirect(`/mat?error=${encodeURIComponent('Invalid email or password')}`);
+    }
+
+    // Check password
+    const isPasswordValid = await user.comparePassword(password);
+    if (!isPasswordValid) {
+      return res.redirect(`/mat?error=${encodeURIComponent('Invalid email or password')}`);
+    }
+
+    // Check if email is verified
+    if (!user.isEmailVerified) {
+      return res.redirect(`/mat?error=${encodeURIComponent('Please verify your email address first. Check your inbox for the verification link.')}`);
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save();
+
+    // Store token in session
+    req.session.token = token;
+
+    // Redirect to appropriate dashboard
+    res.redirect(`/dashboard/${user.role}`);
+
+  } catch (error) {
+    console.error('Login error:', error);
+    res.redirect(`/mat?error=${encodeURIComponent('Login failed. Please try again.')}`);
+  }
+});
+
+// Forgot password route
+router.post('/forgot-password', forgotPasswordValidation, async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      const errorMessages = errors.array().map(error => error.msg);
+      return res.redirect(`/mat?error=${encodeURIComponent(errorMessages.join('. '))}`);
+    }
+
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      // Don't reveal if email exists or not for security
+      return res.redirect(`/mat?success=${encodeURIComponent('If an account with this email exists, a password reset link has been sent.')}`);
+    }
+
+    // Generate password reset token
+    const resetToken = user.generatePasswordResetToken();
+    await user.save();
+
+    // Send password reset email
+    try {
+      await emailService.sendPasswordResetEmail(user, resetToken);
+      res.redirect(`/mat?success=${encodeURIComponent('If an account with this email exists, a password reset link has been sent.')}`);
+    } catch (emailError) {
+      console.error('Password reset email failed:', emailError);
+      res.redirect(`/mat?error=${encodeURIComponent('Failed to send password reset email. Please try again.')}`);
+    }
+
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.redirect(`/mat?error=${encodeURIComponent('Password reset failed. Please try again.')}`);
+  }
+});
+
+// Email verification route
+router.get('/verify-email/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    const user = await User.findOne({
+      emailVerificationToken: token,
+      emailVerificationExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.redirect(`/mat?error=${encodeURIComponent('Invalid or expired verification token')}`);
+    }
+
+    user.isEmailVerified = true;
+    user.emailVerificationToken = null;
+    user.emailVerificationExpires = null;
+    await user.save();
+
+    res.redirect(`/mat?success=${encodeURIComponent('Email verified successfully! You can now log in.')}`);
+
+  } catch (error) {
+    console.error('Email verification error:', error);
+    res.redirect(`/mat?error=${encodeURIComponent('Email verification failed. Please try again.')}`);
+  }
+});
+
+// Reset password page
+router.get('/reset-password/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    const user = await User.findOne({
+      passwordResetToken: token,
+      passwordResetExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.redirect(`/mat?error=${encodeURIComponent('Invalid or expired reset token')}`);
+    }
+
+    res.render('reset-password', { 
+      title: 'Reset Password',
+      token,
+      error: req.query.error,
+      success: req.query.success
+    });
+
+  } catch (error) {
+    console.error('Reset password page error:', error);
+    res.redirect(`/mat?error=${encodeURIComponent('Reset password page failed to load.')}`);
+  }
+});
+
+// Reset password form submission
+router.post('/reset-password/:token', resetPasswordValidation, async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      const errorMessages = errors.array().map(error => error.msg);
+      return res.redirect(`/auth/reset-password/${req.params.token}?error=${encodeURIComponent(errorMessages.join('. '))}`);
+    }
+
+    const { token } = req.params;
+    const { password } = req.body;
+
+    const user = await User.findOne({
+      passwordResetToken: token,
+      passwordResetExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.redirect(`/mat?error=${encodeURIComponent('Invalid or expired reset token')}`);
+    }
+
+    user.password = password;
+    user.passwordResetToken = null;
+    user.passwordResetExpires = null;
+    await user.save();
+
+    res.redirect(`/mat?success=${encodeURIComponent('Password reset successfully! You can now log in with your new password.')}`);
+
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.redirect(`/auth/reset-password/${req.params.token}?error=${encodeURIComponent('Password reset failed. Please try again.')}`);
+  }
+});
+
+// Logout route
+router.get('/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Logout error:', err);
+    }
+    res.redirect('/mat?success=' + encodeURIComponent('Logged out successfully'));
+  });
+});
+
+// Resend verification email
+router.post('/resend-verification', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.redirect(`/mat?error=${encodeURIComponent('User not found')}`);
+    }
+
+    if (user.isEmailVerified) {
+      return res.redirect(`/mat?warning=${encodeURIComponent('Email is already verified')}`);
+    }
+
+    // Generate new verification token
+    const verificationToken = user.generateEmailVerificationToken();
+    await user.save();
+
+    // Send verification email
+    await emailService.sendVerificationEmail(user, verificationToken);
+
+    res.redirect(`/mat?success=${encodeURIComponent('Verification email sent! Please check your inbox.')}`);
+
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    res.redirect(`/mat?error=${encodeURIComponent('Failed to resend verification email. Please try again.')}`);
+  }
 });
 
 export default router;

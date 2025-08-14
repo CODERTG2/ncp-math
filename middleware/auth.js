@@ -1,82 +1,92 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
-// Generate JWT token
-const generateToken = (userId) => {
-    return jwt.sign({ userId }, process.env.JWT_SECRET, {
-        expiresIn: '7d'
-    });
-};
-
-// Middleware to verify JWT token
-const authenticateToken = async (req, res, next) => {
-    try {
-        const authHeader = req.headers['authorization'];
-        const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-
-        if (!token) {
-            return res.status(401).json({
-                success: false,
-                message: 'Access token required'
-            });
-        }
-
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.userId).select('-password');
-        
-        if (!user || !user.isActive) {
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid token or user not found'
-            });
-        }
-
-        req.user = user;
-        next();
-    } catch (error) {
-        if (error.name === 'JsonWebTokenError') {
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid token'
-            });
-        }
-        if (error.name === 'TokenExpiredError') {
-            return res.status(401).json({
-                success: false,
-                message: 'Token expired'
-            });
-        }
-        
-        return res.status(500).json({
-            success: false,
-            message: 'Authentication error'
-        });
+// Middleware to check if user is authenticated
+export const isAuthenticated = async (req, res, next) => {
+  try {
+    const token = req.session.token;
+    
+    if (!token) {
+      return res.redirect('/mat?error=Please log in to access this page');
     }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.userId).select('-password');
+    
+    if (!user) {
+      req.session.destroy();
+      return res.redirect('/mat?error=User not found');
+    }
+
+    if (!user.isEmailVerified) {
+      return res.redirect('/mat?error=Please verify your email first');
+    }
+
+    req.user = user;
+    res.locals.user = user;
+    next();
+  } catch (error) {
+    console.error('Authentication error:', error);
+    req.session.destroy();
+    return res.redirect('/mat?error=Authentication failed');
+  }
 };
 
-// Middleware to check user roles
-const authorizeRoles = (...roles) => {
-    return (req, res, next) => {
-        if (!req.user) {
-            return res.status(401).json({
-                success: false,
-                message: 'Authentication required'
-            });
-        }
+// Middleware to check if user has specific role
+export const hasRole = (roles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.redirect('/mat?error=Authentication required');
+    }
 
-        if (!roles.includes(req.user.userType)) {
-            return res.status(403).json({
-                success: false,
-                message: 'Access denied. Insufficient permissions.'
-            });
-        }
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).render('error', {
+        title: 'Access Denied',
+        message: 'You do not have permission to access this page',
+        user: req.user
+      });
+    }
 
-        next();
-    };
+    next();
+  };
 };
 
-export {
-    generateToken,
-    authenticateToken,
-    authorizeRoles
+// Middleware to redirect authenticated users away from login page
+export const redirectIfAuthenticated = async (req, res, next) => {
+  try {
+    const token = req.session.token;
+    
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await User.findById(decoded.userId);
+      
+      if (user && user.isEmailVerified) {
+        return res.redirect(`/dashboard/${user.role}`);
+      }
+    }
+  } catch (error) {
+    // Token is invalid, continue to login page
+  }
+  
+  next();
+};
+
+// Middleware to attach user to response locals if authenticated (for navbar)
+export const attachUser = async (req, res, next) => {
+  try {
+    const token = req.session.token;
+    
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await User.findById(decoded.userId).select('-password');
+      
+      if (user && user.isEmailVerified) {
+        res.locals.user = user;
+      }
+    }
+  } catch (error) {
+    // Ignore errors, user just won't be attached
+  }
+  
+  next();
 };

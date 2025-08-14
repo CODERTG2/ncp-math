@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - Mu Alpha Theta</title>
+    <link rel="stylesheet" href="/css/mat.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <div class="logo-placeholder">
+                    <i class="fas fa-infinity"></i>
+                </div>
+                <span class="nav-title">Mu Alpha Theta</span>
+            </div>
+            <div class="nav-menu">
+                <button class="nav-btn" onclick="window.location.href='/resources'">
+                    <i class="fas fa-book"></i>
+                    Resources
+                </button>
+                <button class="nav-btn" onclick="window.location.href='/ai'">
+                    <i class="fas fa-robot"></i>
+                    AI
+                </button>
+                <button class="nav-btn active">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                </button>
+                <button class="nav-btn" onclick="window.location.href='/logout'">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="mat-portal">
+        <div class="container" style="max-width: 1200px; padding-top: 2rem;">
+            <!-- Welcome Header -->
+            <div class="auth-card" style="margin-bottom: 2rem;">
+                <div class="auth-header">
+                    <div class="auth-logo">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <h1 class="auth-title">Welcome, <%= user.firstName %>!</h1>
+                    <p class="auth-subtitle">Student Dashboard</p>
+                </div>
+                <div class="auth-body" style="text-align: center;">
+                    <p style="color: var(--gray-600); font-size: 1.1rem; margin: 0;">
+                        Ready to explore the world of mathematics? Your journey starts here.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Dashboard Grid -->
+            <div class="dashboard-preview" style="margin-top: 0;">
+                <!-- Practice Problems -->
+                <div class="preview-card">
+                    <div class="preview-icon" style="background: linear-gradient(135deg, var(--emerald), #34d399);">
+                        <i class="fas fa-calculator"></i>
+                    </div>
+                    <h3 class="preview-title">Practice Problems</h3>
+                    <p class="preview-description">
+                        Access a vast library of mathematical problems across different topics and difficulty levels.
+                    </p>
+                    <button class="auth-button" style="margin-top: 1rem;" onclick="alert('Coming Soon!')">
+                        <i class="fas fa-play"></i>
+                        Start Practicing
+                    </button>
+                </div>
+
+                <!-- Progress Tracking -->
+                <div class="preview-card">
+                    <div class="preview-icon" style="background: linear-gradient(135deg, var(--purple), #a855f7);">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3 class="preview-title">Progress Tracking</h3>
+                    <p class="preview-description">
+                        Monitor your learning journey with detailed analytics and performance insights.
+                    </p>
+                    <button class="auth-button" style="margin-top: 1rem;" onclick="alert('Coming Soon!')">
+                        <i class="fas fa-chart-bar"></i>
+                        View Progress
+                    </button>
+                </div>
+
+                <!-- Competitions -->
+                <div class="preview-card">
+                    <div class="preview-icon" style="background: linear-gradient(135deg, var(--mu-gold), var(--mu-gold-light));">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <h3 class="preview-title">Competitions</h3>
+                    <p class="preview-description">
+                        Participate in mathematics competitions and challenge yourself against peers.
+                    </p>
+                    <button class="auth-button" style="margin-top: 1rem;" onclick="alert('Coming Soon!')">
+                        <i class="fas fa-medal"></i>
+                        Join Competitions
+                    </button>
+                </div>
+
+                <!-- Study Groups -->
+                <div class="preview-card">
+                    <div class="preview-icon" style="background: linear-gradient(135deg, var(--cyan), #22d3ee);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3 class="preview-title">Study Groups</h3>
+                    <p class="preview-description">
+                        Connect with fellow students and collaborate on mathematical challenges.
+                    </p>
+                    <button class="auth-button" style="margin-top: 1rem;" onclick="alert('Coming Soon!')">
+                        <i class="fas fa-user-friends"></i>
+                        Find Groups
+                    </button>
+                </div>
+
+                <!-- Resources -->
+                <div class="preview-card">
+                    <div class="preview-icon" style="background: linear-gradient(135deg, var(--auth-error), #f87171);">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <h3 class="preview-title">Learning Resources</h3>
+                    <p class="preview-description">
+                        Access textbooks, tutorials, and reference materials to enhance your learning.
+                    </p>
+                    <button class="auth-button" style="margin-top: 1rem;" onclick="window.location.href='/resources'">
+                        <i class="fas fa-external-link-alt"></i>
+                        Browse Resources
+                    </button>
+                </div>
+
+                <!-- Profile Settings -->
+                <div class="preview-card">
+                    <div class="preview-icon" style="background: linear-gradient(135deg, var(--gray-600), var(--gray-800));">
+                        <i class="fas fa-user-cog"></i>
+                    </div>
+                    <h3 class="preview-title">Profile Settings</h3>
+                    <p class="preview-description">
+                        Manage your account settings, preferences, and personal information.
+                    </p>
+                    <button class="auth-button" style="margin-top: 1rem;" onclick="alert('Coming Soon!')">
+                        <i class="fas fa-cog"></i>
+                        Edit Profile
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="auth-card" style="margin-top: 2rem;">
+                <div class="auth-body">
+                    <h3 style="text-align: center; color: var(--gray-800); margin-bottom: 1.5rem;">Quick Stats</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+                        <div style="text-align: center; padding: 1rem; background: var(--gray-50); border-radius: var(--radius-lg);">
+                            <div style="font-size: 2rem; font-weight: 700; color: var(--mu-blue); margin-bottom: 0.5rem;">0</div>
+                            <div style="color: var(--gray-600);">Problems Solved</div>
+                        </div>
+                        <div style="text-align: center; padding: 1rem; background: var(--gray-50); border-radius: var(--radius-lg);">
+                            <div style="font-size: 2rem; font-weight: 700; color: var(--emerald); margin-bottom: 0.5rem;">0</div>
+                            <div style="color: var(--gray-600);">Competitions Joined</div>
+                        </div>
+                        <div style="text-align: center; padding: 1rem; background: var(--gray-50); border-radius: var(--radius-lg);">
+                            <div style="font-size: 2rem; font-weight: 700; color: var(--mu-gold); margin-bottom: 0.5rem;">0</div>
+                            <div style="color: var(--gray-600);">Awards Earned</div>
+                        </div>
+                        <div style="text-align: center; padding: 1rem; background: var(--gray-50); border-radius: var(--radius-lg);">
+                            <div style="font-size: 2rem; font-weight: 700; color: var(--purple); margin-bottom: 0.5rem;">
+                                <%= Math.floor((Date.now() - new Date(user.createdAt)) / (1000 * 60 * 60 * 24)) %>
+                            </div>
+                            <div style="color: var(--gray-600);">Days Active</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript -->
+    <script>
+        // Navbar scroll effect
+        window.addEventListener('scroll', function() {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Add some interactivity to cards
+        document.querySelectorAll('.preview-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-8px)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(-4px)';
+            });
+        });
+    </script>
+</body>
+</html>

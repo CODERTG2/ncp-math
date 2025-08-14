@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mu Alpha Theta - NCP Math</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>Mu Alpha Theta - NCP</title>
+    <link rel="stylesheet" href="css/home.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
@@ -19,18 +20,29 @@
                 <span class="nav-title">Mu Alpha Theta</span>
             </div>
             <div class="nav-menu">
-                <button class="nav-btn" id="resourcesBtn">
+                <button class="nav-btn" id="resourcesBtn" onclick="window.location.href='/resources'">
                     <i class="fas fa-book"></i>
                     Resources
                 </button>
-                <button class="nav-btn" id="aiBtn">
+                <button class="nav-btn" id="aiBtn" onclick="window.location.href='/ai'">
                     <i class="fas fa-robot"></i>
                     AI
                 </button>
-                <button class="nav-btn" onclick="window.location.href='/mat'">
-                    <i class="fas fa-graduation-cap"></i>
-                    MAT Portal
-                </button>
+                <% if (typeof user !== 'undefined' && user) { %>
+                    <button class="nav-btn" onclick="window.location.href='/dashboard/<%= user.role %>'">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Dashboard
+                    </button>
+                    <button class="nav-btn" onclick="window.location.href='/logout'">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </button>
+                <% } else { %>
+                    <button class="nav-btn" onclick="window.location.href='/mat'">
+                        <i class="fas fa-graduation-cap"></i>
+                        MAT Portal
+                    </button>
+                <% } %>
             </div>
         </div>
     </nav>
@@ -48,20 +60,10 @@
                     </div>
                 </div>
             </div>
-            <div class="slide">
-                <div class="slide-content">
-                    <div class="placeholder-image slide2">
-                        <div class="slide-overlay">
-                            <h1>Join Our Mathematical Journey</h1>
-                            <p>Discover, learn, and excel in the world of numbers</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
-        <div class="slide-indicators">
-            <span class="indicator active" data-slide="0"></span>
-            <span class="indicator" data-slide="1"></span>
+        <div class="scroll-indicator" onclick="document.querySelector('.about-section').scrollIntoView({ behavior: 'smooth' })">
+            <span class="scroll-text">Scroll Down</span>
+            <div class="scroll-arrow"></div>
         </div>
     </section>
 
@@ -84,8 +86,8 @@
                             <i class="fab fa-instagram"></i>
                         </div>
                         <h3>Follow Us</h3>
-                        <p class="contact-placeholder">@mu_alpha_theta_ncp</p>
-                        <button class="contact-btn">
+                        <p class="contact-placeholder">@ncp.mao</p>
+                        <button class="contact-btn" onclick="window.open('https://www.instagram.com/ncp.mao', '_blank')">
                             <i class="fab fa-instagram"></i>
                             Follow on Instagram
                         </button>
@@ -95,8 +97,8 @@
                             <i class="fas fa-envelope"></i>
                         </div>
                         <h3>Email Us</h3>
-                        <p class="contact-placeholder">contact@mualpatheta-ncp.org</p>
-                        <button class="contact-btn">
+                        <p class="contact-placeholder">vwodzien@cps.edu</p>
+                        <button class="contact-btn" onclick="window.location.href='mailto:vwodzien@cps.edu'">
                             <i class="fas fa-envelope"></i>
                             Send Email
                         </button>
@@ -105,41 +107,5 @@
             </div>
         </section>
     </main>
-
-    <!-- AI Chat Button -->
-    <div class="ai-chat-btn" id="aiChatBtn">
-        <div class="chat-btn-content">
-            <i class="fas fa-comments"></i>
-            <div class="chat-pulse"></div>
-        </div>
-    </div>
-
-    <!-- AI Chat Modal -->
-    <div class="chat-modal" id="chatModal">
-        <div class="chat-header">
-            <h3>AI Assistant</h3>
-            <button class="close-chat" id="closeChatBtn">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="chat-messages" id="chatMessages">
-            <div class="message ai-message">
-                <div class="message-avatar">
-                    <i class="fas fa-robot"></i>
-                </div>
-                <div class="message-content">
-                    Hello! I'm your AI assistant. How can I help you with mathematics today?
-                </div>
-            </div>
-        </div>
-        <div class="chat-input-container">
-            <input type="text" id="chatInput" placeholder="Type your message..." />
-            <button id="sendMessageBtn">
-                <i class="fas fa-paper-plane"></i>
-            </button>
-        </div>
-    </div>
-
-    <script src="js/script.js"></script>
 </body>
 </html>
