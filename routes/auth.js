@@ -29,7 +29,17 @@ const registerValidation = [
   body('email')
     .isEmail()
     .normalizeEmail()
-    .withMessage('Please enter a valid email address'),
+    .withMessage('Please enter a valid email address')
+    .custom((value, { req }) => {
+      // If registering as a teacher, validate against approved email list
+      if (req.body.role === 'teacher') {
+        const approvedTeacherEmails = process.env.TEACHER_EMAILS?.split(',').map(email => email.trim()) || [];
+        if (!approvedTeacherEmails.includes(value)) {
+          throw new Error('This email is not authorized to create a teacher account. Please contact administration.');
+        }
+      }
+      return true;
+    }),
   
   body('password')
     .isLength({ min: 8 })
