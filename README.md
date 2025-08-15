@@ -1,6 +1,6 @@
 # Mu Alpha Theta - NCP Math Portal 🧮
 
-A comprehensive web application for the Mu Alpha Theta mathematics honor society, featuring authentication, tutoring session management, Google Sheets integration, and role-based dashboards for students and teachers.
+A comprehensive web application for the Mu Alpha Theta mathematics honor society, featuring authentication, tutoring session management, Google Sheets integration, and role-based dashboards for students and teachers. Online registration and tracking for Mu Alpha Theta Tutors for math tables.
 
 ## 🌟 Features
 
