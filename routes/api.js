@@ -711,4 +711,252 @@ router.post('/checkin', isAuthenticated, async (req, res) => {
   }
 });
 
+// Get student hours tracker data
+router.get('/student-hours', isAuthenticated, async (req, res) => {
+  try {
+    // Get all students
+    const students = await User.find({ role: 'student' }).select('firstName lastName');
+    
+    // Get tutoring schedule from Google Sheets (which includes tutor check-ins)
+    let schedule = [];
+    
+    // Check if Google Sheets is configured
+    if (process.env.GOOGLE_SHEETS_ID && process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+      try {
+        schedule = await googleSheetsService.getTutoringSchedule();
+      } catch (sheetsError) {
+        console.warn('Google Sheets not available for student hours:', sheetsError.message);
+        // Fallback to database check-ins if Google Sheets unavailable
+        return await getStudentHoursFromDatabase(students, res);
+      }
+    } else {
+      console.warn('Google Sheets not configured for student hours');
+      return await getStudentHoursFromDatabase(students, res);
+    }
+    
+    // Process the data to calculate monthly hours from Google Sheets
+    const studentHoursData = students.map(student => {
+      const studentName = `${student.firstName} ${student.lastName}`;
+      
+      // Calculate hours per month from Google Sheets tutoring sessions
+      const monthlyHours = {};
+      
+      schedule.forEach(session => {
+        // Check if this student was a tutor and checked in for this session
+        const tutorEntry = session.tutors.find(tutor => 
+          tutor.name && tutor.name.trim() === studentName && tutor.checkedIn
+        );
+        
+        if (tutorEntry) {
+          const date = new Date(session.date);
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const year = date.getFullYear();
+          
+          // Only count current academic year (September to June)
+          const currentYear = new Date().getFullYear();
+          const currentMonth = new Date().getMonth() + 1;
+          
+          // Determine academic year
+          let academicYear;
+          if (currentMonth >= 9) { // September or later
+            academicYear = currentYear;
+          } else { // January to August
+            academicYear = currentYear - 1;
+          }
+          
+          // Check if this session is in the current academic year
+          const isCurrentAcademicYear = 
+            (year === academicYear && parseInt(month) >= 9) || 
+            (year === academicYear + 1 && parseInt(month) <= 6);
+          
+          if (isCurrentAcademicYear) {
+            if (!monthlyHours[month]) {
+              monthlyHours[month] = 0;
+            }
+            // Each tutoring session represents hours based on numHours field or default to 1
+            const hours = parseFloat(session.numHours) || 1;
+            monthlyHours[month] += hours;
+          }
+        }
+      });
+      
+      return {
+        firstName: student.firstName,
+        lastName: student.lastName,
+        monthlyHours: monthlyHours
+      };
+    });
+    
+    res.json({ students: studentHoursData });
+    
+  } catch (error) {
+    console.error('Error fetching student hours:', error);
+    res.status(500).json({ error: 'Failed to fetch student hours data' });
+  }
+});
+
+// Fallback function to use database check-ins if Google Sheets unavailable
+async function getStudentHoursFromDatabase(students, res) {
+  try {
+    // Get all check-ins from database
+    const checkIns = await CheckIn.find({}).populate('userId', 'firstName lastName');
+    
+    // Process the data to calculate monthly hours
+    const studentHoursData = students.map(student => {
+      const studentCheckIns = checkIns.filter(checkIn => 
+        checkIn.userId && checkIn.userId._id.toString() === student._id.toString()
+      );
+      
+      // Calculate hours per month
+      const monthlyHours = {};
+      
+      studentCheckIns.forEach(checkIn => {
+        const date = new Date(checkIn.sessionDate);
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        
+        // Only count current academic year (September to June)
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth() + 1;
+        
+        // Determine academic year
+        let academicYear;
+        if (currentMonth >= 9) { // September or later
+          academicYear = currentYear;
+        } else { // January to August
+          academicYear = currentYear - 1;
+        }
+        
+        // Check if this check-in is in the current academic year
+        const isCurrentAcademicYear = 
+          (year === academicYear && parseInt(month) >= 9) || 
+          (year === academicYear + 1 && parseInt(month) <= 6);
+        
+        if (isCurrentAcademicYear) {
+          if (!monthlyHours[month]) {
+            monthlyHours[month] = 0;
+          }
+          // Each check-in represents 1 hour
+          monthlyHours[month] += 1;
+        }
+      });
+      
+      return {
+        firstName: student.firstName,
+        lastName: student.lastName,
+        monthlyHours: monthlyHours
+      };
+    });
+    
+    res.json({ students: studentHoursData });
+  } catch (error) {
+    console.error('Error fetching student hours from database:', error);
+    res.status(500).json({ error: 'Failed to fetch student hours data from database' });
+  }
+}
+
+// Get student stats for dashboard
+router.get('/student-stats', isAuthenticated, async (req, res) => {
+  try {
+    if (!process.env.GOOGLE_SHEETS_ID || !process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+      return res.json({
+        hoursTutoredThisMonth: 0,
+        hoursSignedUpThisMonth: 0,
+        hoursTutoredThisYear: 0,
+        hoursToMakeUp: 0
+      });
+    }
+
+    const userName = `${req.user.firstName} ${req.user.lastName || ''}`.trim();
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1; // 1-12
+    const currentYear = currentDate.getFullYear();
+    
+    // Get all tutoring sessions from Google Sheets
+    const schedule = await googleSheetsService.getTutoringSchedule();
+    
+    let hoursTutoredThisMonth = 0;
+    let hoursSignedUpThisMonth = 0;
+    let hoursTutoredThisYear = 0;
+    
+    schedule.forEach(session => {
+      const sessionDate = new Date(session.date);
+      const sessionMonth = sessionDate.getMonth() + 1;
+      const sessionYear = sessionDate.getFullYear();
+      
+      // Find if user is in this session
+      const userTutor = session.tutors.find(tutor => tutor.name === userName);
+      
+      if (userTutor) {
+        const sessionHours = parseFloat(session.numHours) || 1; // Default to 1 hour if not specified
+        
+        // Hours signed up for this month
+        if (sessionMonth === currentMonth && sessionYear === currentYear) {
+          hoursSignedUpThisMonth += sessionHours;
+          
+          // Hours tutored this month (only if checked in)
+          if (userTutor.checkedIn) {
+            hoursTutoredThisMonth += sessionHours;
+          }
+        }
+        
+        // Hours tutored this year (only if checked in)
+        if (sessionYear === currentYear && userTutor.checkedIn) {
+          hoursTutoredThisYear += sessionHours;
+        }
+      }
+    });
+    
+    // Calculate hours to make up
+    // Requirement: 2 hours per month from September to June
+    let hoursToMakeUp = 0;
+    
+    // Only calculate if we're in or past September 2025
+    if (currentYear > 2025 || (currentYear === 2025 && currentMonth >= 9)) {
+      let monthsPassed = 0;
+      
+      if (currentYear === 2025) {
+        // From September 2025 to current month
+        monthsPassed = currentMonth - 8; // September is month 9, so 9-8=1 for first month
+      } else if (currentYear > 2025) {
+        // Full school year is Sep-June = 10 months
+        // Plus any additional months in current year (up to June)
+        monthsPassed = 10; // Sep 2025 to June 2026
+        
+        if (currentYear === 2026) {
+          // Add months from current year (Jan=1 to June=6 max)
+          monthsPassed += Math.min(currentMonth, 6);
+        } else if (currentYear > 2026) {
+          // Add full years after 2026
+          const fullYearsAfter2026 = currentYear - 2026;
+          monthsPassed += fullYearsAfter2026 * 10; // 10 months per school year
+          
+          // Add current year months if we're past 2026
+          monthsPassed += Math.min(currentMonth, 6);
+        }
+      }
+      
+      const requiredHours = monthsPassed * 2;
+      hoursToMakeUp = Math.max(0, requiredHours - hoursTutoredThisYear);
+    }
+    
+    res.json({
+      hoursTutoredThisMonth: Math.round(hoursTutoredThisMonth * 10) / 10,
+      hoursSignedUpThisMonth: Math.round(hoursSignedUpThisMonth * 10) / 10,
+      hoursTutoredThisYear: Math.round(hoursTutoredThisYear * 10) / 10,
+      hoursToMakeUp: Math.round(hoursToMakeUp * 10) / 10
+    });
+    
+  } catch (error) {
+    console.error('Error fetching student stats:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch student stats',
+      hoursTutoredThisMonth: 0,
+      hoursSignedUpThisMonth: 0,
+      hoursTutoredThisYear: 0,
+      hoursToMakeUp: 0
+    });
+  }
+});
+
 export default router;

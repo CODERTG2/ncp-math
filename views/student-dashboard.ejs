@@ -172,25 +172,43 @@
             <!-- Quick Stats -->
             <div class="auth-card stats-card" style="margin-top: 2rem;">
                 <div class="auth-body">
-                    <h3 style="text-align: center;">Quick Stats</h3>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
+                        <h3 style="margin: 0; text-align: center; flex: 1;">Tutoring Hours Statistics</h3>
+                        <button id="refreshStats" style="
+                            background: linear-gradient(135deg, #10b981, #059669);
+                            color: white;
+                            border: none;
+                            padding: 0.5rem 1rem;
+                            border-radius: 8px;
+                            font-size: 0.875rem;
+                            font-weight: 500;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                            display: flex;
+                            align-items: center;
+                            gap: 0.5rem;
+                            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+                        " onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(16, 185, 129, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(16, 185, 129, 0.3)'">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh
+                        </button>
+                    </div>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
                         <div class="stat-item" style="text-align: center;">
-                            <div class="stat-number">0</div>
-                            <div class="stat-label">Sessions Attended</div>
+                            <div class="stat-number" id="hoursTutoredThisMonth">--</div>
+                            <div class="stat-label">Hours Tutored This Month</div>
                         </div>
                         <div class="stat-item" style="text-align: center;">
-                            <div class="stat-number">0</div>
-                            <div class="stat-label">Sessions Signed Up</div>
+                            <div class="stat-number" id="hoursSignedUpThisMonth">--</div>
+                            <div class="stat-label">Hours Signed Up This Month</div>
                         </div>
                         <div class="stat-item" style="text-align: center;">
-                            <div class="stat-number">0</div>
-                            <div class="stat-label">Hours Tutored</div>
+                            <div class="stat-number" id="hoursTutoredThisYear">--</div>
+                            <div class="stat-label">Hours Tutored This Year</div>
                         </div>
                         <div class="stat-item" style="text-align: center;">
-                            <div class="stat-number">
-                                <%= Math.floor((Date.now() - new Date(user.createdAt)) / (1000 * 60 * 60 * 24)) %>
-                            </div>
-                            <div class="stat-label">Days Active</div>
+                            <div class="stat-number" id="hoursToMakeUp">--</div>
+                            <div class="stat-label">Hours to Make Up</div>
                         </div>
                     </div>
                 </div>
@@ -576,6 +594,8 @@
                     await loadTutoringData();
                     // Refresh the sign-ups widget
                     await loadMySignups();
+                    // Refresh the stats
+                    await loadStudentStats();
                     // Update the modal if it's open
                     const modal = document.getElementById('sessionModal');
                     if (modal.style.display === 'flex') {
@@ -614,6 +634,8 @@
                     await loadTutoringData();
                     // Refresh the sign-ups widget
                     await loadMySignups();
+                    // Refresh the stats
+                    await loadStudentStats();
                     // Update the modal if it's open
                     const modal = document.getElementById('sessionModal');
                     if (modal.style.display === 'flex') {
@@ -664,8 +686,44 @@
             loadMySignups();
         });
         
+        // Refresh stats button
+        document.getElementById('refreshStats').addEventListener('click', () => {
+            loadStudentStats();
+        });
+        
+        // Load student stats
+        async function loadStudentStats() {
+            try {
+                const response = await fetch('/api/student-stats');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch stats');
+                }
+                
+                const stats = await response.json();
+                
+                // Update the stat numbers
+                document.getElementById('hoursTutoredThisMonth').textContent = stats.hoursTutoredThisMonth || 0;
+                document.getElementById('hoursSignedUpThisMonth').textContent = stats.hoursSignedUpThisMonth || 0;
+                document.getElementById('hoursTutoredThisYear').textContent = stats.hoursTutoredThisYear || 0;
+                document.getElementById('hoursToMakeUp').textContent = stats.hoursToMakeUp || 0;
+                
+                // Add color coding for hours to make up
+                const hoursToMakeUpElement = document.getElementById('hoursToMakeUp');
+                if (stats.hoursToMakeUp > 0) {
+                    hoursToMakeUpElement.style.color = '#ef4444'; // Red for hours behind
+                } else {
+                    hoursToMakeUpElement.style.color = '#22c55e'; // Green for on track
+                }
+                
+            } catch (error) {
+                console.error('Error loading student stats:', error);
+                // Keep default values if error occurs
+            }
+        }
+        
         // Initialize everything when page loads
         initializeCalendar();
+        loadStudentStats();
     </script>
 </body>
 </html>

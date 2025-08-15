@@ -100,6 +100,13 @@ app.get('/dashboard/teacher', isAuthenticated, hasRole(['teacher']), (req, res) 
   });
 });
 
+app.get('/dashboard/teacher/student-hours', isAuthenticated, hasRole(['teacher']), (req, res) => {
+  res.render('student-hours-tracker', {
+    user: req.user,
+    title: 'Student Hours Tracker'
+  });
+});
+
 // Logout route (redirect)
 app.get('/logout', (req, res) => {
   res.redirect('/auth/logout');

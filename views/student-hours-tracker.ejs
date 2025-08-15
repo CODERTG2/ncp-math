@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Hours Tracker - Mu Alpha Theta</title>
+    <link rel="stylesheet" href="/css/mat.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .hours-tracker-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .tracker-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .tracker-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+            text-align: center;
+        }
+
+        .tracker-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            text-align: center;
+            margin-top: 0.5rem;
+            margin-bottom: 0;
+        }
+
+        .back-button {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 2rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .back-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(107, 114, 128, 0.4);
+        }
+
+        .hours-table-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+        }
+
+        .hours-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .hours-table th {
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            color: #374151;
+            font-weight: 600;
+            padding: 1rem 0.75rem;
+            text-align: center;
+            border-bottom: 2px solid #e5e7eb;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .hours-table th:first-child {
+            text-align: left;
+            background: linear-gradient(135deg, #f1f5f9, #cbd5e1);
+            position: sticky;
+            left: 0;
+            z-index: 11;
+            min-width: 200px;
+        }
+
+        .hours-table td {
+            padding: 0.75rem;
+            text-align: center;
+            border-bottom: 1px solid #f3f4f6;
+            transition: all 0.2s ease;
+        }
+
+        .hours-table td:first-child {
+            text-align: left;
+            font-weight: 600;
+            background: #f8fafc;
+            position: sticky;
+            left: 0;
+            z-index: 9;
+            border-right: 2px solid #e5e7eb;
+        }
+
+        .hours-cell {
+            font-weight: 600;
+            border-radius: 6px;
+            margin: 2px;
+            padding: 0.5rem;
+        }
+
+        .hours-low {
+            background-color: #fecaca !important;
+            color: #dc2626;
+        }
+
+        .hours-good {
+            background-color: #bbf7d0 !important;
+            color: #059669;
+        }
+
+        .loading-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .table-scroll {
+            overflow-x: auto;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .month-header {
+            font-size: 0.8rem;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            min-width: 60px;
+        }
+
+        @media (max-width: 768px) {
+            .hours-tracker-container {
+                padding: 1rem;
+            }
+            
+            .tracker-title {
+                font-size: 2rem;
+            }
+            
+            .hours-table th,
+            .hours-table td {
+                padding: 0.5rem 0.25rem;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <div class="logo-placeholder">
+                    <i class="fas fa-infinity"></i>
+                </div>
+                <span class="nav-title">Mu Alpha Theta</span>
+            </div>
+            <div class="nav-menu">
+                <button class="nav-btn" onclick="window.location.href='/resources'">
+                    <i class="fas fa-book"></i>
+                    Resources
+                </button>
+                <button class="nav-btn" onclick="window.location.href='/ai'">
+                    <i class="fas fa-robot"></i>
+                    AI
+                </button>
+                <button class="nav-btn active">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                </button>
+                <button class="nav-btn" onclick="window.location.href='/logout'">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="mat-portal">
+        <div class="hours-tracker-container">
+            <a href="/dashboard/teacher" class="back-button">
+                <i class="fas fa-arrow-left"></i>
+                Back to Dashboard
+            </a>
+
+            <div class="tracker-header">
+                <h1 class="tracker-title">Student Hours Tracker</h1>
+                <p class="tracker-subtitle">Monitor student attendance hours across the academic year</p>
+            </div>
+
+            <div class="hours-table-container">
+                <div id="loadingContainer" class="loading-container">
+                    <div class="loading-spinner"></div>
+                </div>
+                
+                <div id="tableContainer" style="display: none;">
+                    <div class="table-scroll">
+                        <table class="hours-table">
+                            <thead>
+                                <tr>
+                                    <th>Student Name</th>
+                                    <th class="month-header">September</th>
+                                    <th class="month-header">October</th>
+                                    <th class="month-header">November</th>
+                                    <th class="month-header">December</th>
+                                    <th class="month-header">January</th>
+                                    <th class="month-header">February</th>
+                                    <th class="month-header">March</th>
+                                    <th class="month-header">April</th>
+                                    <th class="month-header">May</th>
+                                    <th class="month-header">June</th>
+                                </tr>
+                            </thead>
+                            <tbody id="hoursTableBody">
+                                <!-- Table content will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Load student hours data
+        async function loadStudentHours() {
+            try {
+                const response = await fetch('/api/student-hours');
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                populateTable(data.students);
+                
+                // Hide loading and show table
+                document.getElementById('loadingContainer').style.display = 'none';
+                document.getElementById('tableContainer').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error loading student hours:', error);
+                document.getElementById('loadingContainer').innerHTML = `
+                    <div style="text-align: center; color: #dc2626;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                        <p>Error loading student hours data</p>
+                        <button onclick="loadStudentHours()" class="back-button" style="margin: 0;">
+                            <i class="fas fa-redo"></i>
+                            Retry
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function populateTable(students) {
+            const tbody = document.getElementById('hoursTableBody');
+            tbody.innerHTML = '';
+
+            students.forEach(student => {
+                const row = document.createElement('tr');
+                
+                // Student name cell
+                const nameCell = document.createElement('td');
+                nameCell.textContent = `${student.firstName} ${student.lastName}`;
+                row.appendChild(nameCell);
+
+                // Month cells (September through June)
+                const months = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
+                
+                months.forEach(month => {
+                    const cell = document.createElement('td');
+                    const hours = student.monthlyHours[month] || 0;
+                    
+                    cell.innerHTML = `<div class="hours-cell ${hours < 2 ? 'hours-low' : 'hours-good'}">${hours}</div>`;
+                    row.appendChild(cell);
+                });
+
+                tbody.appendChild(row);
+            });
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStudentHours();
+        });
+    </script>
+</body>
+</html>
