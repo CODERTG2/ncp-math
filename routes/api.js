@@ -605,4 +605,110 @@ function getSessionHour(timeString) {
   return hour24;
 }
 
+// Check-in route
+router.post('/checkin', isAuthenticated, async (req, res) => {
+  try {
+    const { sessionDate, sessionTime, deviceFingerprint } = req.body;
+    const userId = req.user.id;
+    const userName = `${req.user.firstName} ${req.user.lastName}`;
+
+    // Validate required fields
+    if (!sessionDate || !sessionTime) {
+      return res.redirect('/check-in?error=' + encodeURIComponent('Session date and time are required'));
+    }
+
+    // Validate session time format and check if it's within 15 minutes of session start/end
+    const now = new Date();
+    let sessionStartTime, sessionEndTime;
+    
+    // Handle both simple times (e.g., "3:00 PM") and time ranges (e.g., "3:15 PM - 4:15 PM")
+    if (sessionTime.includes(' - ')) {
+      // Time range format
+      const [startTime, endTime] = sessionTime.split(' - ');
+      sessionStartTime = new Date(`${sessionDate}T${convertTimeToISO(startTime)}`);
+      sessionEndTime = new Date(`${sessionDate}T${convertTimeToISO(endTime)}`);
+    } else {
+      // Simple time format - assume 1 hour session
+      sessionStartTime = new Date(`${sessionDate}T${convertTimeToISO(sessionTime)}`);
+      sessionEndTime = new Date(sessionStartTime.getTime() + 60 * 60 * 1000); // Add 1 hour
+    }
+    
+    // Check if current time is within 15 minutes of session start OR end
+    const timeDiffStart = Math.abs((sessionStartTime - now) / (1000 * 60));
+    const timeDiffEnd = Math.abs((sessionEndTime - now) / (1000 * 60));
+    const minTimeDiff = Math.min(timeDiffStart, timeDiffEnd);
+
+    if (minTimeDiff > 15) {
+      const timeInfo = sessionTime.includes(' - ') 
+        ? `between ${sessionTime}` 
+        : `at ${sessionTime}`;
+      return res.redirect('/check-in?error=' + encodeURIComponent(`You can only check in within 15 minutes of your session time ${timeInfo}. Current time difference: ${Math.round(minTimeDiff)} minutes.`));
+    }
+
+    // Check if user has a signup for this session
+    const schedule = await googleSheetsService.getTutoringSchedule();
+    const session = schedule.find(s => s.date === sessionDate && s.time === sessionTime);
+    
+    if (!session) {
+      return res.redirect('/check-in?error=' + encodeURIComponent('Session not found'));
+    }
+
+    // Check if user is signed up for this session
+    const userTutor = session.tutors.find(tutor => tutor.name === userName);
+    if (!userTutor) {
+      return res.redirect('/check-in?error=' + encodeURIComponent('You are not signed up for this session'));
+    }
+
+    // Check if user is already checked in
+    if (userTutor.checkedIn) {
+      return res.redirect('/check-in?warning=' + encodeURIComponent('You have already checked in for this session'));
+    }
+
+    // Check device fingerprint limit (max 2 check-ins per day per device)
+    const todayCheckIns = await CheckIn.countDocuments({
+      deviceFingerprint: deviceFingerprint,
+      sessionDate: sessionDate
+    });
+
+    if (todayCheckIns >= 2) {
+      return res.redirect('/check-in?error=' + encodeURIComponent('You have reached the maximum check-ins (2) for today from this device'));
+    }
+
+    // Update check-in status in Google Sheets
+    await googleSheetsService.updateTutorCheckIn(sessionDate, sessionTime, userName, true);
+
+    // Check if Math Tables photo is required (sessions between 9 AM and 2 PM)
+    const sessionHour = getSessionHour(sessionTime);
+    const mathTablesRequired = sessionHour >= 9 && sessionHour <= 14;
+
+    // Create check-in record in database
+    const checkIn = new CheckIn({
+      userId: userId,
+      userName: userName,
+      sessionDate: sessionDate,
+      sessionTime: sessionTime,
+      deviceFingerprint: deviceFingerprint,
+      checkInTime: now,
+      isWithinTimeWindow: minTimeDiff <= 15,
+      mathTablesRequired: mathTablesRequired
+    });
+
+    await checkIn.save();
+
+    // Redirect with success message
+    const successMessage = 'Successfully checked in for your session!';
+    let redirectUrl = '/check-in?success=' + encodeURIComponent(successMessage);
+    
+    if (mathTablesRequired) {
+      redirectUrl += '&mathTablesRequired=true';
+    }
+
+    res.redirect(redirectUrl);
+
+  } catch (error) {
+    console.error('Error during check-in:', error);
+    res.redirect('/check-in?error=' + encodeURIComponent('An error occurred during check-in. Please try again.'));
+  }
+});
+
 export default router;

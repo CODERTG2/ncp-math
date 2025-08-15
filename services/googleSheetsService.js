@@ -507,6 +507,61 @@ class GoogleSheetsService {
       throw error;
     }
   }
+
+  async updateTutorCheckIn(date, time, tutorName, checkedIn) {
+    try {
+      if (!this.sheets) {
+        await this.initialize();
+      }
+
+      // Get current session data
+      const sessionData = await this.getSessionData(date, time);
+      if (!sessionData) {
+        throw new Error('Session not found');
+      }
+
+      // Find which tutor column this tutor is in and update the corresponding check-in column
+      const tutorColumns = ['G', 'I', 'K', 'M', 'O', 'Q']; // Tutor columns
+      const checkinColumns = ['H', 'J', 'L', 'N', 'P', 'R']; // Check-in columns
+      
+      let updateColumn = null;
+      
+      for (let i = 0; i < tutorColumns.length; i++) {
+        const tutorCell = `${tutorColumns[i]}${sessionData.rowIndex}`;
+        const tutorResponse = await this.sheets.spreadsheets.values.get({
+          spreadsheetId: this.spreadsheetId,
+          range: tutorCell,
+        });
+        
+        if (tutorResponse.data.values && 
+            tutorResponse.data.values[0] && 
+            tutorResponse.data.values[0][0] === tutorName) {
+          updateColumn = checkinColumns[i];
+          break;
+        }
+      }
+
+      if (!updateColumn) {
+        throw new Error(`Tutor ${tutorName} not found in session ${date} ${time}`);
+      }
+
+      // Update the check-in status
+      await this.sheets.spreadsheets.values.update({
+        spreadsheetId: this.spreadsheetId,
+        range: `${updateColumn}${sessionData.rowIndex}`,
+        valueInputOption: 'RAW',
+        requestBody: {
+          values: [[checkedIn ? 'Yes' : 'No']]
+        }
+      });
+
+      console.log(`Successfully updated check-in status for ${tutorName} in session ${date} ${time}: ${checkedIn ? 'Yes' : 'No'}`);
+      return true;
+    } catch (error) {
+      console.error('Error updating tutor check-in status:', error);
+      throw error;
+    }
+  }
 }
 
 export default new GoogleSheetsService();
