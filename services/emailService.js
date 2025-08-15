@@ -148,6 +148,145 @@ class EmailService {
       throw new Error('Failed to send password reset email');
     }
   }
+
+  async sendSessionCancelledEmail(user, sessionDetails) {
+    if (!this.transporter) {
+      console.log('📧 Email service not configured - skipping session cancelled email');
+      return;
+    }
+
+    const sessionDate = new Date(sessionDetails.date).toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      month: 'long', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: user.email,
+      subject: 'Session Cancelled - Mu Alpha Theta Tutoring',
+      html: `
+        <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #dc2626, #ef4444); padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 30px;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">Session Cancelled</h1>
+            <p style="color: #fee2e2; margin: 10px 0 0 0; font-size: 16px;">Important Update About Your Tutoring Session</p>
+          </div>
+          
+          <div style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+            <h2 style="color: #1e293b; margin-top: 0;">Hi ${user.firstName},</h2>
+            <p style="color: #475569; line-height: 1.6; font-size: 16px;">
+              We're sorry to inform you that the tutoring session you signed up for has been cancelled.
+            </p>
+            
+            <div style="background: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;">
+              <h3 style="color: #dc2626; margin-top: 0;">Cancelled Session Details:</h3>
+              <p style="margin: 8px 0; color: #374151;"><strong>Date:</strong> ${sessionDate}</p>
+              <p style="margin: 8px 0; color: #374151;"><strong>Time:</strong> ${sessionDetails.time}</p>
+              <p style="margin: 8px 0; color: #374151;"><strong>Room:</strong> ${sessionDetails.room || 'TBD'}</p>
+            </div>
+            
+            <p style="color: #475569; line-height: 1.6; font-size: 16px;">
+              Please check the tutoring calendar for alternative sessions. You can sign up for other available sessions anytime.
+            </p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.BASE_URL || 'http://localhost:3000'}/student-dashboard" 
+                 style="background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 14px 28px; 
+                        text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+                View Tutoring Calendar
+              </a>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+      console.log(`📧 Session cancelled email sent to ${user.email}`);
+    } catch (error) {
+      console.error('Error sending session cancelled email:', error);
+    }
+  }
+
+  async sendSessionUpdatedEmail(user, oldSessionDetails, newSessionDetails, changes) {
+    if (!this.transporter) {
+      console.log('📧 Email service not configured - skipping session updated email');
+      return;
+    }
+
+    const sessionDate = new Date(oldSessionDetails.date).toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      month: 'long', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+
+    const changesList = Object.keys(changes).map(key => {
+      const fieldNames = {
+        time: 'Time',
+        room: 'Room',
+        maxTutors: 'Max Tutors'
+      };
+      return `<li><strong>${fieldNames[key] || key}:</strong> ${oldSessionDetails[key]} → ${changes[key]}</li>`;
+    }).join('');
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: user.email,
+      subject: 'Session Updated - Mu Alpha Theta Tutoring',
+      html: `
+        <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #f59e0b, #f97316); padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 30px;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">Session Updated</h1>
+            <p style="color: #fed7aa; margin: 10px 0 0 0; font-size: 16px;">Important Changes to Your Tutoring Session</p>
+          </div>
+          
+          <div style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+            <h2 style="color: #1e293b; margin-top: 0;">Hi ${user.firstName},</h2>
+            <p style="color: #475569; line-height: 1.6; font-size: 16px;">
+              Your tutoring session has been updated. Please review the changes below:
+            </p>
+            
+            <div style="background: #fffbeb; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+              <h3 style="color: #f59e0b; margin-top: 0;">Session Details:</h3>
+              <p style="margin: 8px 0; color: #374151;"><strong>Date:</strong> ${sessionDate}</p>
+              <p style="margin: 8px 0; color: #374151;"><strong>Current Time:</strong> ${newSessionDetails.time}</p>
+              <p style="margin: 8px 0; color: #374151;"><strong>Current Room:</strong> ${newSessionDetails.room || 'TBD'}</p>
+            </div>
+            
+            <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #374151; margin-top: 0;">Changes Made:</h3>
+              <ul style="color: #374151; margin: 0; padding-left: 20px;">
+                ${changesList}
+              </ul>
+            </div>
+            
+            <p style="color: #475569; line-height: 1.6; font-size: 16px;">
+              Your signup is still confirmed for this session. If you can no longer attend due to these changes, 
+              please cancel your signup and find an alternative session.
+            </p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.BASE_URL || 'http://localhost:3000'}/student-dashboard" 
+                 style="background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 14px 28px; 
+                        text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+                View My Sessions
+              </a>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+      console.log(`📧 Session updated email sent to ${user.email}`);
+    } catch (error) {
+      console.error('Error sending session updated email:', error);
+    }
+  }
 }
 
 export default new EmailService();

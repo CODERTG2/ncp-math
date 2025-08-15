@@ -309,17 +309,17 @@
                 ">
                     ${session.cancelled ? '<div style="background: #dc2626; color: white; padding: 0.5rem 1rem; border-radius: 6px; margin-bottom: 1rem; text-align: center; font-weight: 600;"><i class="fas fa-ban"></i> CANCELLED SESSION</div>' : ''}
                     <div class="session-edit-form" id="session-${dateKey}-${session.time.replace(/[^a-zA-Z0-9]/g, '')}">
-                        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                             <div class="auth-input-group">
                                 <label class="auth-label">Time</label>
                                 <input type="text" class="auth-input session-time" value="${session.time}">
                             </div>
                             <div class="auth-input-group">
                                 <label class="auth-label">Max Tutors</label>
-                                <input type="number" class="session-number-input session-max-tutors" value="${session.maxTutors}" min="1" max="20">
+                                <input type="number" class="auth-input session-max-tutors" value="${session.maxTutors}" min="1" max="20">
                             </div>
                         </div>
-                        <div style="margin-bottom: 1.5rem;">
+                        <div style="margin-bottom: 1rem;">
                             <div class="auth-input-group">
                                 <label class="auth-label">Room</label>
                                 <input type="text" class="auth-input session-room" value="${session.room || 'TBD'}">

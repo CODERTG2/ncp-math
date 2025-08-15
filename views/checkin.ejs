@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Check-In | Math Portal</title>
+    <link rel="stylesheet" href="/css/mat.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .checkin-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: var(--space-xl) var(--space-lg);
+        }
+
+        .checkin-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: var(--radius-2xl);
+            box-shadow: var(--shadow-xl);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+            padding: var(--space-xl);
+        }
+
+        .checkin-header {
+            text-align: center;
+            margin-bottom: var(--space-xl);
+        }
+
+        .checkin-title {
+            font-size: var(--font-2xl);
+            font-weight: var(--font-bold);
+            color: var(--mu-blue);
+            margin-bottom: var(--space-sm);
+        }
+
+        .checkin-subtitle {
+            color: var(--gray-600);
+            font-size: var(--font-lg);
+        }
+
+        .checkin-form {
+            margin-top: var(--space-lg);
+        }
+
+        .form-group {
+            margin-bottom: var(--space-lg);
+        }
+
+        .form-label {
+            display: block;
+            font-weight: var(--font-semibold);
+            color: var(--gray-700);
+            margin-bottom: var(--space-sm);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: var(--space-md);
+            border: 2px solid var(--input-border);
+            border-radius: var(--radius-lg);
+            font-size: var(--font-base);
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--input-border-focus);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .checkin-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--mu-blue) 0%, #1e40af 100%);
+            color: white;
+            border: none;
+            padding: var(--space-lg);
+            border-radius: var(--radius-lg);
+            font-size: var(--font-lg);
+            font-weight: var(--font-semibold);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: var(--space-lg);
+        }
+
+        .checkin-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .checkin-btn:disabled {
+            background: var(--gray-400);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .alert {
+            padding: var(--space-md);
+            border-radius: var(--radius-lg);
+            margin-bottom: var(--space-lg);
+        }
+
+        .alert-success {
+            background-color: #d1fae5;
+            border: 1px solid #10b981;
+            color: #065f46;
+        }
+
+        .alert-error {
+            background-color: #fee2e2;
+            border: 1px solid #ef4444;
+            color: #991b1b;
+        }
+
+        .alert-warning {
+            background-color: #fef3c7;
+            border: 1px solid #f59e0b;
+            color: #92400e;
+        }
+
+        .auth-info {
+            background: var(--gray-50);
+            padding: var(--space-lg);
+            border-radius: var(--radius-lg);
+            margin-bottom: var(--space-lg);
+        }
+
+        .auth-info h3 {
+            margin: 0 0 var(--space-sm) 0;
+            color: var(--mu-blue);
+        }
+
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            margin: var(--space-lg) 0;
+        }
+
+        .spinner {
+            border: 3px solid var(--gray-200);
+            border-top: 3px solid var(--mu-blue);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .math-tables-notice {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #f59e0b;
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            margin-top: var(--space-lg);
+            text-align: center;
+        }
+
+        .math-tables-notice h4 {
+            color: #92400e;
+            margin-bottom: var(--space-sm);
+        }
+
+        .math-tables-notice p {
+            color: #92400e;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="mat-portal">
+        <div class="checkin-container">
+            <div class="checkin-card">
+                <div class="checkin-header">
+                    <h1 class="checkin-title">
+                        <i class="fas fa-clipboard-check"></i>
+                        Session Check-In
+                    </h1>
+                    <p class="checkin-subtitle">Check in for your tutoring session</p>
+                </div>
+
+                <!-- Authentication Status -->
+                <% if (typeof user !== 'undefined' && user) { %>
+                    <div class="auth-info">
+                        <h3><i class="fas fa-user-check"></i> Authenticated as:</h3>
+                        <p><strong><%= user.firstName %> <%= user.lastName %></strong> (<%= user.email %>)</p>
+                        <p>Role: <%= user.role.charAt(0).toUpperCase() + user.role.slice(1) %></p>
+                    </div>
+                <% } %>
+
+                <!-- Messages -->
+                <% if (typeof error !== 'undefined' && error) { %>
+                    <div class="alert alert-error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <%= error %>
+                    </div>
+                <% } %>
+
+                <% if (typeof success !== 'undefined' && success) { %>
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i>
+                        <%= success %>
+                        <% if (typeof mathTablesRequired !== 'undefined' && mathTablesRequired) { %>
+                            <div class="math-tables-notice">
+                                <h4><i class="fas fa-camera"></i> Math Tables Photo Required</h4>
+                                <p>Since your session is between 9 AM and 2 PM, please message Tanmay a photo of a Math Tables tag.</p>
+                            </div>
+                        <% } %>
+                    </div>
+                <% } %>                <% if (typeof warning !== 'undefined' && warning) { %>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <%= warning %>
+                    </div>
+                <% } %>
+
+                <!-- Check-in Form -->
+                <% if (typeof user === 'undefined' || !user) { %>
+                    <!-- Login Form -->
+                    <form class="checkin-form" action="/auth/login" method="POST" id="loginForm">
+                        <input type="hidden" name="redirectTo" value="/check-in">
+                        
+                        <div class="form-group">
+                            <label for="email" class="form-label">
+                                <i class="fas fa-envelope"></i> Email Address
+                            </label>
+                            <input 
+                                type="email" 
+                                id="email" 
+                                name="email" 
+                                class="form-input" 
+                                required 
+                                placeholder="Enter your email"
+                                autocomplete="email"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="password" class="form-label">
+                                <i class="fas fa-lock"></i> Password
+                            </label>
+                            <input 
+                                type="password" 
+                                id="password" 
+                                name="password" 
+                                class="form-input" 
+                                required 
+                                placeholder="Enter your password"
+                                autocomplete="current-password"
+                            >
+                        </div>
+
+                        <button type="submit" class="checkin-btn">
+                            <i class="fas fa-sign-in-alt"></i> Login to Check In
+                        </button>
+                    </form>
+                <% } else { %>
+                    <!-- Check-in Form for Authenticated Users -->
+                    <form class="checkin-form" action="/api/checkin" method="POST" id="checkinForm">
+                        <div class="form-group">
+                            <label for="sessionDate" class="form-label">
+                                <i class="fas fa-calendar"></i> Session Date
+                            </label>
+                            <input 
+                                type="date" 
+                                id="sessionDate" 
+                                name="sessionDate" 
+                                class="form-input" 
+                                required
+                                value="<%= new Date().toISOString().split('T')[0] %>"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="sessionTime" class="form-label">
+                                <i class="fas fa-clock"></i> Session Time
+                            </label>
+                            <select id="sessionTime" name="sessionTime" class="form-input" required>
+                                <option value="">Select your session time</option>
+                                <option value="9:00 AM">9:00 AM</option>
+                                <option value="9:30 AM">9:30 AM</option>
+                                <option value="10:00 AM">10:00 AM</option>
+                                <option value="10:30 AM">10:30 AM</option>
+                                <option value="11:00 AM">11:00 AM</option>
+                                <option value="11:30 AM">11:30 AM</option>
+                                <option value="12:00 PM">12:00 PM</option>
+                                <option value="12:30 PM">12:30 PM</option>
+                                <option value="1:00 PM">1:00 PM</option>
+                                <option value="1:30 PM">1:30 PM</option>
+                                <option value="2:00 PM">2:00 PM</option>
+                                <option value="2:30 PM">2:30 PM</option>
+                                <option value="3:00 PM">3:00 PM</option>
+                                <option value="3:30 PM">3:30 PM</option>
+                                <option value="4:00 PM">4:00 PM</option>
+                                <option value="4:30 PM">4:30 PM</option>
+                                <option value="5:00 PM">5:00 PM</option>
+                                <option value="5:30 PM">5:30 PM</option>
+                                <option value="6:00 PM">6:00 PM</option>
+                            </select>
+                        </div>
+
+                        <div class="loading-spinner" id="loadingSpinner">
+                            <div class="spinner"></div>
+                            <p>Processing check-in...</p>
+                        </div>
+
+                        <button type="submit" class="checkin-btn" id="checkinBtn">
+                            <i class="fas fa-clipboard-check"></i> Check In
+                        </button>
+                    </form>
+                <% } %>
+
+                <!-- Additional Info -->
+                <div style="margin-top: var(--space-xl); padding-top: var(--space-lg); border-top: 1px solid var(--gray-200);">
+                    <h4 style="color: var(--mu-blue); margin-bottom: var(--space-sm);">Check-In Requirements:</h4>
+                    <ul style="color: var(--gray-600); margin: 0; padding-left: var(--space-lg);">
+                        <li>You can only check in twice per day from the same device</li>
+                        <li>Check-in is only allowed within 15 minutes of your session time</li>
+                        <li>For sessions between 9 AM and 2 PM, you'll need to message Tanmay a Math Tables photo</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Device fingerprinting for check-in limits
+        function generateDeviceFingerprint() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.textBaseline = 'top';
+            ctx.font = '14px Arial';
+            ctx.fillText('Device fingerprint', 2, 2);
+            
+            const fingerprint = [
+                navigator.userAgent,
+                navigator.language,
+                screen.width + 'x' + screen.height,
+                new Date().getTimezoneOffset(),
+                canvas.toDataURL()
+            ].join('|');
+            
+            return btoa(fingerprint).substring(0, 32);
+        }
+
+        // Handle check-in form submission
+        document.getElementById('checkinForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const form = this;
+            const btn = document.getElementById('checkinBtn');
+            const spinner = document.getElementById('loadingSpinner');
+            
+            // Add device fingerprint
+            const fingerprintInput = document.createElement('input');
+            fingerprintInput.type = 'hidden';
+            fingerprintInput.name = 'deviceFingerprint';
+            fingerprintInput.value = generateDeviceFingerprint();
+            form.appendChild(fingerprintInput);
+            
+            // Show loading state
+            btn.disabled = true;
+            spinner.style.display = 'block';
+            
+            // Submit form
+            form.submit();
+        });
+
+        // Auto-fill current time and populate session times from user's signups
+        document.addEventListener('DOMContentLoaded', function() {
+            const sessionTimeSelect = document.getElementById('sessionTime');
+            const sessionDateInput = document.getElementById('sessionDate');
+            
+            if (!sessionTimeSelect || !sessionDateInput) return;
+            
+            // Function to populate session times based on selected date
+            function populateSessionTimes() {
+                const selectedDate = sessionDateInput.value;
+                if (!selectedDate) return;
+                
+                // Fetch user's signups for the selected date
+                fetch('/api/my-signups')
+                    .then(response => response.json())
+                    .then(signups => {
+                        // Clear existing options
+                        sessionTimeSelect.innerHTML = '<option value="">Select a session time</option>';
+                        
+                        // Filter signups for the selected date
+                        const daySignups = signups.filter(signup => signup.date === selectedDate);
+                        
+                        if (daySignups.length === 0) {
+                            sessionTimeSelect.innerHTML = '<option value="">No sessions signed up for this date</option>';
+                            return;
+                        }
+                        
+                        // Add options for each signed up session
+                        daySignups.forEach(signup => {
+                            const option = document.createElement('option');
+                            option.value = signup.time;
+                            option.textContent = `${signup.time} - Room ${signup.room}${signup.checkedIn ? ' (Already checked in)' : ''}`;
+                            if (signup.checkedIn) {
+                                option.disabled = true;
+                            }
+                            sessionTimeSelect.appendChild(option);
+                        });
+                        
+                        // Auto-select if close to a session time
+                        autoSelectCurrentTime(daySignups);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching signups:', error);
+                        sessionTimeSelect.innerHTML = '<option value="">Error loading sessions</option>';
+                    });
+            }
+            
+            // Function to auto-select current time if within 15 minutes
+            function autoSelectCurrentTime(signups) {
+                const now = new Date();
+                const currentHour = now.getHours();
+                const currentMinute = now.getMinutes();
+                const currentMinutes = currentHour * 60 + currentMinute;
+                
+                // Find closest session time within 15 minutes
+                for (let signup of signups) {
+                    if (signup.checkedIn) continue; // Skip already checked in sessions
+                    
+                    const [timeStr, period] = signup.time.split(' ');
+                    const [hours, minutes] = timeStr.split(':').map(Number);
+                    let sessionHour = hours;
+                    
+                    if (period === 'PM' && hours !== 12) {
+                        sessionHour += 12;
+                    } else if (period === 'AM' && hours === 12) {
+                        sessionHour = 0;
+                    }
+                    
+                    const sessionMinutes = sessionHour * 60 + minutes;
+                    const timeDiff = Math.abs(sessionMinutes - currentMinutes);
+                    
+                    if (timeDiff <= 15) {
+                        sessionTimeSelect.value = signup.time;
+                        break;
+                    }
+                }
+            }
+            
+            // Load session times for current date on page load
+            populateSessionTimes();
+            
+            // Update session times when date changes
+            sessionDateInput.addEventListener('change', populateSessionTimes);
+        });
+    </script>
+</body>
+</html>

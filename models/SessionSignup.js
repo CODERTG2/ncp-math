@@ -24,8 +24,19 @@ const sessionSignupSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['signed_up', 'cancelled', 'attended', 'no_show'],
+    enum: ['signed_up', 'cancelled', 'attended', 'no_show', 'session_cancelled', 'session_updated'],
     default: 'signed_up'
+  },
+  sessionStatus: {
+    type: String,
+    enum: ['active', 'cancelled', 'updated'],
+    default: 'active'
+  },
+  lastNotified: {
+    type: Date
+  },
+  changeReason: {
+    type: String // Reason for session change (time change, room change, etc.)
   }
 });
 

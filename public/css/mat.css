@@ -317,6 +317,174 @@
   opacity: 0.7;
 }
 
+/* Auth Input Styles (for dashboard forms) */
+.auth-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: var(--font-primary);
+  background: white;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.auth-input:focus {
+  border-color: var(--mu-blue);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  transform: translateY(-1px);
+}
+
+.auth-input:hover {
+  border-color: #d1d5db;
+}
+
+/* Number Input Specific Styling */
+.session-number-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: var(--font-primary);
+  background: white;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+  text-align: center;
+  font-weight: 600;
+  color: #374151;
+}
+
+.session-number-input:focus {
+  border-color: var(--mu-blue);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  transform: translateY(-1px);
+}
+
+.session-number-input:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+/* Remove spinner arrows on number inputs */
+.session-number-input::-webkit-outer-spin-button,
+.session-number-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+.session-number-input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Session Status Styling */
+.signup-session-card.cancelled {
+  opacity: 0.7;
+  border-color: #d1d5db !important;
+  background: #f9fafb !important;
+}
+
+.signup-session-card.updated {
+  border-color: #f59e0b !important;
+  background: linear-gradient(135deg, #fffbeb, #ffffff) !important;
+}
+
+.status-badge {
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge.confirmed {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.status-badge.cancelled {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.status-badge.updated {
+  background: #fffbeb;
+  color: #f59e0b;
+  border: 1px solid #fed7aa;
+}
+
+.status-badge.deleted {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+
+.change-notification {
+  background: #fffbeb;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 12px;
+  animation: slideIn 0.3s ease-out;
+}
+
+.change-notification-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.change-notification-header i {
+  color: #f59e0b;
+  font-size: 0.9rem;
+}
+
+.change-notification-title {
+  font-weight: 600;
+  color: #92400e;
+  font-size: 0.9rem;
+}
+
+.change-notification-text {
+  margin: 0;
+  color: #92400e;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Auth Input Group */
+.auth-input-group {
+  margin-bottom: 1rem;
+}
+
+.auth-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
 /* Password Input Container */
 .password-input-container {
   position: relative;
@@ -908,6 +1076,15 @@
 .user-avatar:hover {
   transform: scale(1.1);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Calendar Actions */
+.calendar-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  position: relative;
+  z-index: 10;
 }
 
 .modern-calendar-nav {

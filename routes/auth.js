@@ -171,23 +171,26 @@ router.post('/login', loginValidation, async (req, res) => {
       return res.redirect(`/mat?error=${encodeURIComponent(errorMessages.join('. '))}`);
     }
 
-    const { email, password } = req.body;
+    const { email, password, redirectTo } = req.body;
 
     // Find user
     const user = await User.findOne({ email });
     if (!user) {
-      return res.redirect(`/mat?error=${encodeURIComponent('Invalid email or password')}`);
+      const backUrl = redirectTo ? `${redirectTo}?error=` : '/mat?error=';
+      return res.redirect(`${backUrl}${encodeURIComponent('Invalid email or password')}`);
     }
 
     // Check password
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
-      return res.redirect(`/mat?error=${encodeURIComponent('Invalid email or password')}`);
+      const backUrl = redirectTo ? `${redirectTo}?error=` : '/mat?error=';
+      return res.redirect(`${backUrl}${encodeURIComponent('Invalid email or password')}`);
     }
 
     // Check if email is verified
     if (!user.isEmailVerified) {
-      return res.redirect(`/mat?error=${encodeURIComponent('Please verify your email address first. Check your inbox for the verification link.')}`);
+      const backUrl = redirectTo ? `${redirectTo}?error=` : '/mat?error=';
+      return res.redirect(`${backUrl}${encodeURIComponent('Please verify your email address first. Check your inbox for the verification link.')}`);
     }
 
     // Generate JWT token
@@ -204,8 +207,9 @@ router.post('/login', loginValidation, async (req, res) => {
     // Store token in session
     req.session.token = token;
 
-    // Redirect to appropriate dashboard
-    res.redirect(`/dashboard/${user.role}`);
+    // Redirect to specified page or appropriate dashboard
+    const redirectUrl = redirectTo || `/dashboard/${user.role}`;
+    res.redirect(redirectUrl);
 
   } catch (error) {
     console.error('Login error:', error);

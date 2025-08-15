@@ -73,6 +73,18 @@ app.get('/mat', (req, res) => {
   });
 });
 
+// Check-in
+app.get("/check-in", attachUser, (req, res) => {
+  res.render("checkin", { 
+    title: 'Check-in',
+    user: res.locals.user,
+    error: req.query.error,
+    success: req.query.success,
+    warning: req.query.warning,
+    mathTablesRequired: req.query.mathTablesRequired === 'true'
+  });
+});
+
 // Protected dashboard routes
 app.get('/dashboard/student', isAuthenticated, hasRole(['student']), (req, res) => {
   res.render('student-dashboard', {

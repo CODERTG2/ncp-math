@@ -214,6 +214,12 @@
         let currentDate = new Date();
         let tutoringSessions = {};
         
+        // Helper function to safely parse YYYY-MM-DD dates
+        function parseDate(dateString) {
+            const [year, month, day] = dateString.split('-').map(Number);
+            return new Date(year, month - 1, day); // month - 1 because JS months are 0-indexed
+        }
+        
         // Initialize calendar
         function initializeCalendar() {
             updateCalendarDisplay();
@@ -296,7 +302,8 @@
             const modalTitle = document.getElementById('modalTitle');
             const modalBody = document.getElementById('modalBody');
             
-            const date = new Date(dateKey);
+            // Parse date safely to avoid timezone issues
+            const date = parseDate(dateKey);
             const dateString = date.toLocaleDateString('en-US', { 
                 weekday: 'long', 
                 year: 'numeric', 
@@ -393,50 +400,92 @@
             noSignups.style.display = 'none';
             
             try {
-                // Extract user's sign-ups from tutoring sessions
-                const currentUserName = '<%= user.firstName %> <%= user.lastName || "" %>'.trim();
-                const userSignups = [];
+                // Fetch user's signups with status from the API
+                const response = await fetch('/api/my-signups');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch signups');
+                }
+                
+                const userSignups = await response.json();
+                
+                // Filter to only show upcoming sessions
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 
-                Object.keys(tutoringSessions).forEach(dateKey => {
-                    const sessionDate = new Date(dateKey);
-                    if (sessionDate >= today) { // Only show upcoming sessions
-                        tutoringSessions[dateKey].forEach(session => {
-                            if (session.signedUpUsers && session.signedUpUsers.includes(currentUserName)) {
-                                userSignups.push({
-                                    date: dateKey,
-                                    time: session.time,
-                                    room: session.room || 'TBD',
-                                    cancelled: session.cancelled,
-                                    maxTutors: session.maxTutors,
-                                    signedUp: session.signedUp
-                                });
-                            }
-                        });
-                    }
+                const upcomingSignups = userSignups.filter(signup => {
+                    // Parse date safely to avoid timezone issues
+                    const sessionDate = parseDate(signup.date);
+                    return sessionDate >= today;
                 });
                 
-                // Sort by date and time
-                userSignups.sort((a, b) => {
-                    const dateA = new Date(a.date + ' ' + a.time);
-                    const dateB = new Date(b.date + ' ' + b.time);
-                    return dateA - dateB;
-                });
-                
-                if (userSignups.length === 0) {
+                if (upcomingSignups.length === 0) {
                     noSignups.style.display = 'block';
                 } else {
-                    mySignupsList.innerHTML = userSignups.map(signup => {
-                        const sessionDate = new Date(signup.date);
+                    mySignupsList.innerHTML = upcomingSignups.map(signup => {
+                        // Parse date safely to avoid timezone issues
+                        const sessionDate = parseDate(signup.date);
                         const dateString = sessionDate.toLocaleDateString('en-US', { 
                             weekday: 'long', 
                             month: 'long', 
                             day: 'numeric' 
                         });
+
+                        // Determine status display
+                        let statusBadge = '';
+                        let statusClass = '';
+                        let cardClass = '';
+                        
+                        switch(signup.displayStatus) {
+                            case 'session_cancelled':
+                                statusBadge = '<span style="background: #fef2f2; color: #dc2626; padding: 0.3rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; border: 1px solid #fecaca;">CANCELLED</span>';
+                                cardClass = 'cancelled';
+                                break;
+                            case 'session_deleted':
+                                statusBadge = '<span style="background: #f3f4f6; color: #6b7280; padding: 0.3rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; border: 1px solid #d1d5db;">DELETED</span>';
+                                cardClass = 'cancelled';
+                                break;
+                            case 'session_updated':
+                                statusBadge = '<span style="background: #fffbeb; color: #f59e0b; padding: 0.3rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; border: 1px solid #fed7aa;">UPDATED</span>';
+                                cardClass = '';
+                                break;
+                            case 'cancelled':
+                                statusBadge = '<span style="background: #f3f4f6; color: #6b7280; padding: 0.3rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; border: 1px solid #d1d5db;">YOU CANCELLED</span>';
+                                cardClass = 'cancelled';
+                                break;
+                            default:
+                                statusBadge = '<span style="background: #f0fdf4; color: #16a34a; padding: 0.3rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; border: 1px solid #bbf7d0;">CONFIRMED</span>';
+                                cardClass = '';
+                        }
+
+                        // Look up current session data from tutoring sessions for room info
+                        let displayTime = signup.time;
+                        let displayRoom = signup.room || 'TBD';
+                        
+                        // Try to get current session data from the loaded tutoring sessions
+                        const sessionsForDate = tutoringSessions[signup.date];
+                        if (sessionsForDate) {
+                            const matchingSession = sessionsForDate.find(s => s.time === signup.time);
+                            if (matchingSession) {
+                                displayRoom = matchingSession.room || 'TBD';
+                            }
+                        }
+                        
+                        // Show change notification if session was updated
+                        let changeNotification = '';
+                        if (signup.displayStatus === 'session_updated' && signup.changeReason) {
+                            changeNotification = `
+                                <div style="background: #fffbeb; border: 1px solid #fed7aa; border-radius: 8px; padding: 12px; margin-top: 12px;">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                        <i class="fas fa-exclamation-triangle" style="color: #f59e0b; font-size: 0.9rem;"></i>
+                                        <span style="font-weight: 600; color: #92400e; font-size: 0.9rem;">Session Changed</span>
+                                    </div>
+                                    <p style="margin: 0; color: #92400e; font-size: 0.85rem;">${signup.changeReason}</p>
+                                </div>
+                            `;
+                        }
                         
                         return `
-                        <div class="signup-session-card ${signup.cancelled ? 'cancelled' : ''}" style="
+                        <div class="signup-session-card ${cardClass}" style="
                             background: white;
                             border: 1px solid #e5e7eb;
                             border-radius: 12px;
@@ -444,6 +493,7 @@
                             margin-bottom: 1rem;
                             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
                             transition: all 0.2s ease;
+                            ${cardClass === 'cancelled' ? 'opacity: 0.7; border-color: #d1d5db;' : ''}
                         ">
                             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
                                 <div style="flex: 1;">
@@ -454,38 +504,38 @@
                                     <div style="display: flex; align-items: center; gap: 1.5rem; margin-left: 1.85rem;">
                                         <div style="display: flex; align-items: center; gap: 0.5rem;">
                                             <i class="fas fa-clock" style="color: #6b7280; font-size: 0.9rem;"></i>
-                                            <span style="color: #374151; font-weight: 500;">${signup.time}</span>
+                                            <span style="color: #374151; font-weight: 500;">${displayTime}</span>
                                         </div>
                                         <div style="display: flex; align-items: center; gap: 0.5rem;">
                                             <i class="fas fa-map-marker-alt" style="color: #6b7280; font-size: 0.9rem;"></i>
-                                            <span style="color: #374151;">Room ${signup.room}</span>
+                                            <span style="color: #374151;">Room ${displayRoom}</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem;">
-                                    ${signup.cancelled ? 
-                                        '<span style="background: #fef2f2; color: #dc2626; padding: 0.3rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; border: 1px solid #fecaca;">CANCELLED</span>' : 
-                                        '<span style="background: #f0fdf4; color: #16a34a; padding: 0.3rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; border: 1px solid #bbf7d0;">CONFIRMED</span>'
-                                    }
-                                    <button onclick="cancelSessionSignup('${signup.date}', '${signup.time}')" style="
-                                        background: #ef4444;
-                                        color: white;
-                                        border: none;
-                                        padding: 0.5rem 1rem;
-                                        border-radius: 8px;
-                                        font-size: 0.875rem;
-                                        font-weight: 500;
-                                        cursor: pointer;
-                                        transition: all 0.2s ease;
-                                        display: flex;
-                                        align-items: center;
-                                        gap: 0.5rem;
-                                    " onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
-                                        <i class="fas fa-times"></i>
-                                        Cancel
-                                    </button>
+                                    ${statusBadge}
+                                    ${signup.displayStatus === 'signed_up' || signup.displayStatus === 'session_updated' ? `
+                                        <button onclick="cancelSessionSignup('${signup.date}', '${signup.time}')" style="
+                                            background: #ef4444;
+                                            color: white;
+                                            border: none;
+                                            padding: 0.5rem 1rem;
+                                            border-radius: 8px;
+                                            font-size: 0.875rem;
+                                            font-weight: 500;
+                                            cursor: pointer;
+                                            transition: all 0.2s ease;
+                                            display: flex;
+                                            align-items: center;
+                                            gap: 0.5rem;
+                                        " onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
+                                            <i class="fas fa-times"></i>
+                                            Cancel
+                                        </button>
+                                    ` : ''}
                                 </div>
                             </div>
+                            ${changeNotification}
                         </div>
                         `;
                     }).join('');
