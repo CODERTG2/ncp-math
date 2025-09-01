@@ -26,8 +26,8 @@ class EmailService {
       throw new Error('Email service not configured. Please set up EMAIL_USER and EMAIL_PASS in your .env file.');
     }
 
-    const verificationUrl = `${process.env.BASE_URL || 'https://mao.tgnest.hackclub.app'}/verify-email/${token}`;
-    
+    const verificationUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/verify-email/${token}`;
+
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: user.email,
