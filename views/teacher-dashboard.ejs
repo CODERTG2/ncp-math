@@ -204,6 +204,12 @@
         let currentDate = new Date();
         let tutoringSessions = {};
         
+        // Helper function to safely parse YYYY-MM-DD dates
+        function parseDate(dateString) {
+            const [year, month, day] = dateString.split('-').map(Number);
+            return new Date(year, month - 1, day); // month - 1 because JS months are 0-indexed
+        }
+        
         // Initialize calendar
         function initializeCalendar() {
             updateCalendarDisplay();
@@ -286,7 +292,8 @@
             const modalTitle = document.getElementById('modalTitle');
             const modalBody = document.getElementById('modalBody');
             
-            const date = new Date(dateKey);
+            // Parse date safely to avoid timezone issues
+            const date = parseDate(dateKey);
             const dateString = date.toLocaleDateString('en-US', { 
                 weekday: 'long', 
                 year: 'numeric', 
