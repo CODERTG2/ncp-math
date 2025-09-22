@@ -521,8 +521,8 @@ class GoogleSheetsService {
       }
 
       // Find which tutor column this tutor is in and update the corresponding check-in column
-      const tutorColumns = ['G', 'I', 'K', 'M', 'O', 'Q']; // Tutor columns
-      const checkinColumns = ['H', 'J', 'L', 'N', 'P', 'R']; // Check-in columns
+      const tutorColumns = ['H', 'J', 'L', 'N', 'P', 'R'];
+      const checkinColumns = ['I', 'K', 'M', 'O', 'Q', 'S'];
       
       let updateColumn = null;
       
@@ -532,10 +532,15 @@ class GoogleSheetsService {
           spreadsheetId: this.spreadsheetId,
           range: tutorCell,
         });
-        
-        if (tutorResponse.data.values && 
-            tutorResponse.data.values[0] && 
-            tutorResponse.data.values[0][0] === tutorName) {
+        let cellValue = '';
+        if (tutorResponse.data.values && tutorResponse.data.values[0]) {
+          cellValue = tutorResponse.data.values[0][0];
+        }
+        // Robust comparison: trim and ignore case
+        if (
+          cellValue &&
+          cellValue.trim().toLowerCase() === tutorName.trim().toLowerCase()
+        ) {
           updateColumn = checkinColumns[i];
           break;
         }

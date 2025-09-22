@@ -617,10 +617,11 @@ router.post('/checkin', isAuthenticated, async (req, res) => {
       return res.redirect('/check-in?error=' + encodeURIComponent('Session date and time are required'));
     }
 
-    // Validate session time format and check if it's within 15 minutes of session start/end
+
+    // Validate session time format and check if it's within allowed window
     const now = new Date();
     let sessionStartTime, sessionEndTime;
-    
+
     // Handle both simple times (e.g., "3:00 PM") and time ranges (e.g., "3:15 PM - 4:15 PM")
     if (sessionTime.includes(' - ')) {
       // Time range format
@@ -632,17 +633,16 @@ router.post('/checkin', isAuthenticated, async (req, res) => {
       sessionStartTime = new Date(`${sessionDate}T${convertTimeToISO(sessionTime)}`);
       sessionEndTime = new Date(sessionStartTime.getTime() + 60 * 60 * 1000); // Add 1 hour
     }
-    
-    // Check if current time is within 15 minutes of session start OR end
-    const timeDiffStart = Math.abs((sessionStartTime - now) / (1000 * 60));
-    const timeDiffEnd = Math.abs((sessionEndTime - now) / (1000 * 60));
-    const minTimeDiff = Math.min(timeDiffStart, timeDiffEnd);
 
-    if (minTimeDiff > 15) {
-      const timeInfo = sessionTime.includes(' - ') 
-        ? `between ${sessionTime}` 
+    // Allow check-in from 15 min before start to 15 min after end
+    const checkinWindowStart = new Date(sessionStartTime.getTime() - 15 * 60 * 1000);
+    const checkinWindowEnd = new Date(sessionEndTime.getTime() + 15 * 60 * 1000);
+
+    if (now < checkinWindowStart || now > checkinWindowEnd) {
+      const timeInfo = sessionTime.includes(' - ')
+        ? `between ${sessionTime}`
         : `at ${sessionTime}`;
-      return res.redirect('/check-in?error=' + encodeURIComponent(`You can only check in within 15 minutes of your session time ${timeInfo}. Current time difference: ${Math.round(minTimeDiff)} minutes.`));
+      return res.redirect('/check-in?error=' + encodeURIComponent(`You can only check in from 15 minutes before until 15 minutes after your session time ${timeInfo}.`));
     }
 
     // Check if user has a signup for this session
@@ -682,28 +682,35 @@ router.post('/checkin', isAuthenticated, async (req, res) => {
     const mathTablesRequired = sessionHour >= 9 && sessionHour <= 14;
 
     // Create check-in record in database
-    const checkIn = new CheckIn({
+
+    const isWithinTimeWindow = now >= checkinWindowStart && now <= checkinWindowEnd;
+    // Prevent duplicate check-ins for the same user/session
+    const existingCheckIn = await CheckIn.findOne({
       userId: userId,
-      userName: userName,
       sessionDate: sessionDate,
-      sessionTime: sessionTime,
-      deviceFingerprint: deviceFingerprint,
-      checkInTime: now,
-      isWithinTimeWindow: minTimeDiff <= 15,
-      mathTablesRequired: mathTablesRequired
+      sessionTime: sessionTime
     });
 
-    await checkIn.save();
-
-    // Redirect with success message
+    if (!existingCheckIn) {
+      const checkIn = new CheckIn({
+        userId: userId,
+        userName: userName,
+        sessionDate: sessionDate,
+        sessionTime: sessionTime,
+        deviceFingerprint: deviceFingerprint,
+        checkInTime: now,
+        isWithinTimeWindow: isWithinTimeWindow,
+        mathTablesRequired: mathTablesRequired
+      });
+      await checkIn.save();
+    }
+    // Always redirect with success message (even if already checked in in DB)
     const successMessage = 'Successfully checked in for your session!';
     let redirectUrl = '/check-in?success=' + encodeURIComponent(successMessage);
-    
     if (mathTablesRequired) {
       redirectUrl += '&mathTablesRequired=true';
     }
-
-    res.redirect(redirectUrl);
+    return res.redirect(redirectUrl);
 
   } catch (error) {
     console.error('Error during check-in:', error);
