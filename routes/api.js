@@ -619,7 +619,13 @@ router.post('/checkin', isAuthenticated, async (req, res) => {
 
 
     // Validate session time format and check if it's within allowed window
-    const now = new Date();
+    let now;
+    if (process.env.TIMEZONE === "America/Chicago") {
+      now = new Date();
+    } else {
+      const utcNow = new Date();
+      now = new Date(utcNow.toLocaleString("en-US", {timeZone: "America/Chicago"}));
+    }
     let sessionStartTime, sessionEndTime;
 
     // Handle both simple times (e.g., "3:00 PM") and time ranges (e.g., "3:15 PM - 4:15 PM")
