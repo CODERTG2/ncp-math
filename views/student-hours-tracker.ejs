@@ -86,13 +86,37 @@
             z-index: 10;
         }
 
-        .hours-table th:first-child {
+        .student-name-header {
             text-align: left;
             background: linear-gradient(135deg, #f1f5f9, #cbd5e1);
             position: sticky;
             left: 0;
             z-index: 11;
             min-width: 200px;
+        }
+
+        .month-super-header {
+            background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+            font-weight: 700;
+            font-size: 0.95rem;
+            border-bottom: 1px solid #94a3b8;
+        }
+
+        .sub-header {
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.75rem 0.5rem;
+            min-width: 80px;
+        }
+
+        .hours-done-header {
+            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+            color: #065f46;
+        }
+
+        .required-hours-header {
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            color: #475569;
         }
 
         .hours-table td {
@@ -112,6 +136,10 @@
             border-right: 2px solid #e5e7eb;
         }
 
+        .hours-table td {
+            min-width: 80px;
+        }
+
         .hours-cell {
             font-weight: 600;
             border-radius: 6px;
@@ -119,14 +147,30 @@
             padding: 0.5rem;
         }
 
-        .hours-low {
+        .hours-done-cell {
+            font-weight: 600;
+            border-radius: 6px;
+            margin: 2px;
+            padding: 0.5rem;
+        }
+
+        .hours-done-low {
             background-color: #fecaca !important;
             color: #dc2626;
         }
 
-        .hours-good {
+        .hours-done-good {
             background-color: #bbf7d0 !important;
             color: #059669;
+        }
+
+        .required-hours-cell {
+            font-weight: 600;
+            border-radius: 6px;
+            margin: 2px;
+            padding: 0.5rem;
+            background-color: #f1f5f9 !important;
+            color: #475569;
         }
 
         .loading-container {
@@ -156,12 +200,7 @@
             overflow-y: auto;
         }
 
-        .month-header {
-            font-size: 0.8rem;
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-            min-width: 60px;
-        }
+
 
         @media (max-width: 768px) {
             .hours-tracker-container {
@@ -176,6 +215,20 @@
             .hours-table td {
                 padding: 0.5rem 0.25rem;
                 font-size: 0.8rem;
+            }
+            
+            .month-super-header {
+                font-size: 0.8rem;
+            }
+            
+            .sub-header {
+                font-size: 0.7rem;
+                padding: 0.5rem 0.25rem;
+                min-width: 60px;
+            }
+            
+            .student-name-header {
+                min-width: 150px;
             }
         }
     </style>
@@ -238,17 +291,39 @@
                         <table class="hours-table">
                             <thead>
                                 <tr>
-                                    <th>Student Name</th>
-                                    <th class="month-header">September</th>
-                                    <th class="month-header">October</th>
-                                    <th class="month-header">November</th>
-                                    <th class="month-header">December</th>
-                                    <th class="month-header">January</th>
-                                    <th class="month-header">February</th>
-                                    <th class="month-header">March</th>
-                                    <th class="month-header">April</th>
-                                    <th class="month-header">May</th>
-                                    <th class="month-header">June</th>
+                                    <th rowspan="2" class="student-name-header">Student Name</th>
+                                    <th colspan="2" class="month-super-header">September</th>
+                                    <th colspan="2" class="month-super-header">October</th>
+                                    <th colspan="2" class="month-super-header">November</th>
+                                    <th colspan="2" class="month-super-header">December</th>
+                                    <th colspan="2" class="month-super-header">January</th>
+                                    <th colspan="2" class="month-super-header">February</th>
+                                    <th colspan="2" class="month-super-header">March</th>
+                                    <th colspan="2" class="month-super-header">April</th>
+                                    <th colspan="2" class="month-super-header">May</th>
+                                    <th colspan="2" class="month-super-header">June</th>
+                                </tr>
+                                <tr>
+                                    <th class="sub-header hours-done-header">Hours Done</th>
+                                    <th class="sub-header required-hours-header">Required</th>
+                                    <th class="sub-header hours-done-header">Hours Done</th>
+                                    <th class="sub-header required-hours-header">Required</th>
+                                    <th class="sub-header hours-done-header">Hours Done</th>
+                                    <th class="sub-header required-hours-header">Required</th>
+                                    <th class="sub-header hours-done-header">Hours Done</th>
+                                    <th class="sub-header required-hours-header">Required</th>
+                                    <th class="sub-header hours-done-header">Hours Done</th>
+                                    <th class="sub-header required-hours-header">Required</th>
+                                    <th class="sub-header hours-done-header">Hours Done</th>
+                                    <th class="sub-header required-hours-header">Required</th>
+                                    <th class="sub-header hours-done-header">Hours Done</th>
+                                    <th class="sub-header required-hours-header">Required</th>
+                                    <th class="sub-header hours-done-header">Hours Done</th>
+                                    <th class="sub-header required-hours-header">Required</th>
+                                    <th class="sub-header hours-done-header">Hours Done</th>
+                                    <th class="sub-header required-hours-header">Required</th>
+                                    <th class="sub-header hours-done-header">Hours Done</th>
+                                    <th class="sub-header required-hours-header">Required</th>
                                 </tr>
                             </thead>
                             <tbody id="hoursTableBody">
@@ -303,23 +378,30 @@
                 // Student name cell
                 const nameCell = document.createElement('td');
                 nameCell.textContent = `${student.firstName} ${student.lastName}`;
+                nameCell.style.background = '#f8fafc';
+                nameCell.style.position = 'sticky';
+                nameCell.style.left = '0';
+                nameCell.style.zIndex = '9';
+                nameCell.style.borderRight = '2px solid #e5e7eb';
+                nameCell.style.fontWeight = '600';
                 row.appendChild(nameCell);
 
-                // Month cells (September through June)
+                // Month cells (September through June) - now two cells per month
                 const months = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
                 
                 months.forEach(month => {
-                    const cell = document.createElement('td');
                     const hours = student.monthlyHours[month] || 0;
                     const required = student.monthlyRequirements ? student.monthlyRequirements[month] : (month === '09' ? 2 : 2.5);
                     
-                    // Format hours display (show both actual and required)
-                    const hoursDisplay = required !== 2 && required !== 2.5 ? 
-                        `${hours} / ${required}` : 
-                        `${hours}`;
+                    // Hours Done cell
+                    const hoursDoneCell = document.createElement('td');
+                    hoursDoneCell.innerHTML = `<div class="hours-done-cell ${hours < required ? 'hours-done-low' : 'hours-done-good'}" title="Hours completed: ${hours}">${hours}</div>`;
+                    row.appendChild(hoursDoneCell);
                     
-                    cell.innerHTML = `<div class="hours-cell ${hours < required ? 'hours-low' : 'hours-good'}" title="Required: ${required} hours">${hoursDisplay}</div>`;
-                    row.appendChild(cell);
+                    // Required Hours cell
+                    const requiredCell = document.createElement('td');
+                    requiredCell.innerHTML = `<div class="required-hours-cell" title="Required hours: ${required}">${required}</div>`;
+                    row.appendChild(requiredCell);
                 });
 
                 tbody.appendChild(row);
