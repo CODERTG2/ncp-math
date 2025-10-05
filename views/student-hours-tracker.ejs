@@ -222,6 +222,10 @@
             <div class="tracker-header">
                 <h1 class="tracker-title">Student Hours Tracker</h1>
                 <p class="tracker-subtitle">Monitor student attendance hours across the academic year</p>
+                <div style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.9;">
+                    <strong>Requirements:</strong> 2 hours in September • 2.5 hours per month from October onwards<br>
+                    <strong>Penalty:</strong> Missing hours increase next month's requirement by 50% (rounded down to nearest 0.5)
+                </div>
             </div>
 
             <div class="hours-table-container">
@@ -307,8 +311,14 @@
                 months.forEach(month => {
                     const cell = document.createElement('td');
                     const hours = student.monthlyHours[month] || 0;
+                    const required = student.monthlyRequirements ? student.monthlyRequirements[month] : (month === '09' ? 2 : 2.5);
                     
-                    cell.innerHTML = `<div class="hours-cell ${hours < 2 ? 'hours-low' : 'hours-good'}">${hours}</div>`;
+                    // Format hours display (show both actual and required)
+                    const hoursDisplay = required !== 2 && required !== 2.5 ? 
+                        `${hours} / ${required}` : 
+                        `${hours}`;
+                    
+                    cell.innerHTML = `<div class="hours-cell ${hours < required ? 'hours-low' : 'hours-good'}" title="Required: ${required} hours">${hoursDisplay}</div>`;
                     row.appendChild(cell);
                 });
 

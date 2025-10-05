@@ -631,7 +631,7 @@ router.post('/checkin', isAuthenticated, async (req, res) => {
       console.error('Error getting current time:', e);
     }
     console.log('Current time:', now);
-    
+
     let sessionStartTime, sessionEndTime;
     // Handle both simple times (e.g., "3:00 PM") and time ranges (e.g., "3:15 PM - 4:15 PM")
     if (sessionTime.includes(' - ')) {
@@ -752,12 +752,13 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
       return await getStudentHoursFromDatabase(students, res);
     }
     
-    // Process the data to calculate monthly hours from Google Sheets
+    // Process the data to calculate monthly hours from Google Sheets with new requirements
     const studentHoursData = students.map(student => {
       const studentName = `${student.firstName} ${student.lastName}`;
       
       // Calculate hours per month from Google Sheets tutoring sessions
       const monthlyHours = {};
+      const monthlyRequirements = {};
       
       schedule.forEach(session => {
         // Check if this student was a tutor and checked in for this session
@@ -798,10 +799,41 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
         }
       });
       
+      // Calculate requirements for each month with penalty system
+      const academicMonths = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
+      let cumulativeMissedHours = 0;
+      
+      for (const month of academicMonths) {
+        let requiredForMonth;
+        if (month === '09') {
+          // September: only 2 hours required
+          requiredForMonth = 2;
+        } else {
+          // October onwards: 2.5 base hours + penalties from previous months
+          requiredForMonth = 2.5;
+          
+          // Add 50% penalty for each hour missed in previous months
+          if (cumulativeMissedHours > 0) {
+            let penalty = cumulativeMissedHours * 0.5;
+            // Round down to nearest 0.5 (e.g., 1.25 -> 1.0, 1.75 -> 1.5)
+            penalty = Math.floor(penalty * 2) / 2;
+            requiredForMonth += penalty;
+          }
+        }
+        
+        monthlyRequirements[month] = requiredForMonth;
+        
+        // Calculate missed hours for this month to carry forward
+        const actualHours = monthlyHours[month] || 0;
+        const missedThisMonth = Math.max(0, requiredForMonth - actualHours);
+        cumulativeMissedHours += missedThisMonth;
+      }
+      
       return {
         firstName: student.firstName,
         lastName: student.lastName,
-        monthlyHours: monthlyHours
+        monthlyHours: monthlyHours,
+        monthlyRequirements: monthlyRequirements
       };
     });
     
@@ -819,7 +851,7 @@ async function getStudentHoursFromDatabase(students, res) {
     // Get all check-ins from database
     const checkIns = await CheckIn.find({}).populate('userId', 'firstName lastName');
     
-    // Process the data to calculate monthly hours
+    // Process the data to calculate monthly hours with new requirements
     const studentHoursData = students.map(student => {
       const studentCheckIns = checkIns.filter(checkIn => 
         checkIn.userId && checkIn.userId._id.toString() === student._id.toString()
@@ -827,6 +859,7 @@ async function getStudentHoursFromDatabase(students, res) {
       
       // Calculate hours per month
       const monthlyHours = {};
+      const monthlyRequirements = {};
       
       studentCheckIns.forEach(checkIn => {
         const date = new Date(checkIn.sessionDate);
@@ -859,10 +892,41 @@ async function getStudentHoursFromDatabase(students, res) {
         }
       });
       
+      // Calculate requirements for each month with penalty system
+      const academicMonths = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
+      let cumulativeMissedHours = 0;
+      
+      for (const month of academicMonths) {
+        let requiredForMonth;
+        if (month === '09') {
+          // September: only 2 hours required
+          requiredForMonth = 2;
+        } else {
+          // October onwards: 2.5 base hours + penalties from previous months
+          requiredForMonth = 2.5;
+          
+          // Add 50% penalty for each hour missed in previous months
+          if (cumulativeMissedHours > 0) {
+            let penalty = cumulativeMissedHours * 0.5;
+            // Round down to nearest 0.5 (e.g., 1.25 -> 1.0, 1.75 -> 1.5)
+            penalty = Math.floor(penalty * 2) / 2;
+            requiredForMonth += penalty;
+          }
+        }
+        
+        monthlyRequirements[month] = requiredForMonth;
+        
+        // Calculate missed hours for this month to carry forward
+        const actualHours = monthlyHours[month] || 0;
+        const missedThisMonth = Math.max(0, requiredForMonth - actualHours);
+        cumulativeMissedHours += missedThisMonth;
+      }
+      
       return {
         firstName: student.firstName,
         lastName: student.lastName,
-        monthlyHours: monthlyHours
+        monthlyHours: monthlyHours,
+        monthlyRequirements: monthlyRequirements
       };
     });
     
@@ -925,37 +989,76 @@ router.get('/student-stats', isAuthenticated, async (req, res) => {
       }
     });
     
-    // Calculate hours to make up
-    // Requirement: 2 hours per month from September to June
+    // Calculate hours to make up with new requirements and penalty system
     let hoursToMakeUp = 0;
     
     // Only calculate if we're in or past September 2025
     if (currentYear > 2025 || (currentYear === 2025 && currentMonth >= 9)) {
-      let monthsPassed = 0;
+      // Get all monthly hours for academic year (Sep to June)
+      const academicMonths = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
+      let totalMissedHours = 0;
+      let totalRequiredHours = 0;
       
-      if (currentYear === 2025) {
-        // From September 2025 to current month
-        monthsPassed = currentMonth - 8; // September is month 9, so 9-8=1 for first month
-      } else if (currentYear > 2025) {
-        // Full school year is Sep-June = 10 months
-        // Plus any additional months in current year (up to June)
-        monthsPassed = 10; // Sep 2025 to June 2026
+      // Process each month to calculate required hours and penalties
+      for (let i = 0; i < academicMonths.length; i++) {
+        const month = academicMonths[i];
+        let actualHours = 0;
         
-        if (currentYear === 2026) {
-          // Add months from current year (Jan=1 to June=6 max)
-          monthsPassed += Math.min(currentMonth, 6);
-        } else if (currentYear > 2026) {
-          // Add full years after 2026
-          const fullYearsAfter2026 = currentYear - 2026;
-          monthsPassed += fullYearsAfter2026 * 10; // 10 months per school year
-          
-          // Add current year months if we're past 2026
-          monthsPassed += Math.min(currentMonth, 6);
+        // Determine which year this month belongs to
+        let monthYear;
+        if (month === '09' || month === '10' || month === '11' || month === '12') {
+          monthYear = currentYear; // Fall semester
+        } else {
+          monthYear = currentYear + 1; // Spring semester (next calendar year)
         }
+        
+        // Only process months that have passed
+        const monthDate = new Date(monthYear, parseInt(month) - 1, 1);
+        const now = new Date();
+        if (monthDate > now) {
+          break; // Haven't reached this month yet
+        }
+        
+        // Get actual hours tutored for this month
+        schedule.forEach(session => {
+          const sessionDate = new Date(session.date);
+          const sessionMonth = String(sessionDate.getMonth() + 1).padStart(2, '0');
+          const sessionYear = sessionDate.getFullYear();
+          
+          if (sessionMonth === month && sessionYear === monthYear) {
+            const userTutor = session.tutors.find(tutor => tutor.name === userName);
+            if (userTutor && userTutor.checkedIn) {
+              actualHours += parseFloat(session.numHours) || 1;
+            }
+          }
+        });
+        
+        // Calculate required hours for this month
+        let requiredForMonth;
+        if (month === '09') {
+          // September 2025: only 2 hours required
+          requiredForMonth = 2;
+        } else {
+          // October onwards: 2.5 base hours + penalties from previous months
+          requiredForMonth = 2.5;
+          
+          // Add 50% penalty for each hour missed in previous months
+          if (totalMissedHours > 0) {
+            let penalty = totalMissedHours * 0.5;
+            // Round down to nearest 0.5 (e.g., 1.25 -> 1.0, 1.75 -> 1.5)
+            penalty = Math.floor(penalty * 2) / 2;
+            requiredForMonth += penalty;
+          }
+        }
+        
+        totalRequiredHours += requiredForMonth;
+        
+        // Calculate missed hours for this month
+        const missedThisMonth = Math.max(0, requiredForMonth - actualHours);
+        totalMissedHours += missedThisMonth;
       }
       
-      const requiredHours = monthsPassed * 2;
-      hoursToMakeUp = Math.max(0, requiredHours - hoursTutoredThisYear);
+      hoursToMakeUp = Math.max(0, totalRequiredHours - hoursTutoredThisYear);
     }
     
     res.json({
