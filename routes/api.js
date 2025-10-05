@@ -620,14 +620,17 @@ router.post('/checkin', isAuthenticated, async (req, res) => {
 
     // Validate session time format and check if it's within allowed window
     let now;
-    if (process.env.TIMEZONE === "America/Chicago") {
-      now = new Date();
-    } else {
-      const utcNow = new Date();
-      now = new Date(utcNow.toLocaleString("en-US", {timeZone: "America/Chicago"}));
+    try {
+      if (process.env.TIMEZONE === "America/Chicago") {
+        now = new Date();
+      } else {
+        const utcNow = new Date();
+        now = new Date(utcNow.toLocaleString("en-US", {timeZone: "America/Chicago"}));
+      }
+    } catch (e) {
+      console.error('Error getting current time:', e);
     }
     let sessionStartTime, sessionEndTime;
-
     // Handle both simple times (e.g., "3:00 PM") and time ranges (e.g., "3:15 PM - 4:15 PM")
     if (sessionTime.includes(' - ')) {
       // Time range format
