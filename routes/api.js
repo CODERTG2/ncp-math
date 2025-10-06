@@ -826,7 +826,10 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
         // Calculate missed hours for this month to carry forward
         const actualHours = monthlyHours[month] || 0;
         const missedThisMonth = Math.max(0, requiredForMonth - actualHours);
-        cumulativeMissedHours += missedThisMonth;
+        // Only add to penalty calculation if not September
+        if (month !== '09') {
+          cumulativeMissedHours += missedThisMonth;
+        }
       }
       
       return {
@@ -919,7 +922,10 @@ async function getStudentHoursFromDatabase(students, res) {
         // Calculate missed hours for this month to carry forward
         const actualHours = monthlyHours[month] || 0;
         const missedThisMonth = Math.max(0, requiredForMonth - actualHours);
-        cumulativeMissedHours += missedThisMonth;
+        // Only add to penalty calculation if not September
+        if (month !== '09') {
+          cumulativeMissedHours += missedThisMonth;
+        }
       }
       
       return {
@@ -1039,10 +1045,10 @@ router.get('/student-stats', isAuthenticated, async (req, res) => {
           // September 2025: only 2 hours required
           requiredForMonth = 2;
         } else {
-          // October onwards: 2.5 base hours + penalties from previous months
+          // October onwards: 2.5 base hours + penalties from previous months (excluding September)
           requiredForMonth = 2.5;
           
-          // Add 50% penalty for each hour missed in previous months
+          // Add 50% penalty for each hour missed in previous months (excluding September)
           if (totalMissedHours > 0) {
             let penalty = totalMissedHours * 0.5;
             // Round down to nearest 0.5 (e.g., 1.25 -> 1.0, 1.75 -> 1.5)
@@ -1053,9 +1059,12 @@ router.get('/student-stats', isAuthenticated, async (req, res) => {
         
         totalRequiredHours += requiredForMonth;
         
-        // Calculate missed hours for this month
+        // Calculate missed hours for this month to carry forward
         const missedThisMonth = Math.max(0, requiredForMonth - actualHours);
-        totalMissedHours += missedThisMonth;
+        // Only add to penalty calculation if not September
+        if (month !== '09') {
+          totalMissedHours += missedThisMonth;
+        }
       }
       
       hoursToMakeUp = Math.max(0, totalRequiredHours - hoursTutoredThisYear);
