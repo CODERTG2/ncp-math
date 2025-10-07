@@ -752,9 +752,17 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
       return await getStudentHoursFromDatabase(students, res);
     }
     
+    // Exception students with different hour requirements
+    const exceptionStudents = [
+      "Conor Moloney", "Ella Prentice", "Emilia Pabian", "Julia Kwiek", 
+      "Omar Ramos-Nava", "Sarah Pati", "Winnie Nutkowitz", "Julia Matula", 
+      "Evangelia Buzanis", "Tiannie Wang"
+    ];
+    
     // Process the data to calculate monthly hours from Google Sheets with new requirements
     const studentHoursData = students.map(student => {
       const studentName = `${student.firstName} ${student.lastName}`;
+      const isExceptionStudent = exceptionStudents.includes(studentName);
       
       // Calculate hours per month from Google Sheets tutoring sessions
       const monthlyHours = {};
@@ -806,11 +814,11 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
       for (const month of academicMonths) {
         let requiredForMonth;
         if (month === '09') {
-          // September: only 2 hours required
-          requiredForMonth = 2;
+          // September: exception students have 0 hours required, others have 2 hours
+          requiredForMonth = isExceptionStudent ? 0 : 2;
         } else {
-          // October onwards: 2.5 base hours + penalties from previous months
-          requiredForMonth = 2.5;
+          // October onwards: exception students have 1 base hour, others have 2.5 base hours + penalties from previous months
+          requiredForMonth = isExceptionStudent ? 1 : 2.5;
           
           // Add 50% penalty for each hour missed in previous months
           if (cumulativeMissedHours > 0) {
@@ -851,11 +859,21 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
 // Fallback function to use database check-ins if Google Sheets unavailable
 async function getStudentHoursFromDatabase(students, res) {
   try {
+    // Exception students with different hour requirements
+    const exceptionStudents = [
+      "Conor Moloney", "Ella Prentice", "Emilia Pabian", "Julia Kwiek", 
+      "Omar Ramos-Nava", "Sarah Pati", "Winnie Nutkowitz", "Julia Matula", 
+      "Evangelia Buzanis", "Tiannie Wang"
+    ];
+    
     // Get all check-ins from database
     const checkIns = await CheckIn.find({}).populate('userId', 'firstName lastName');
     
     // Process the data to calculate monthly hours with new requirements
     const studentHoursData = students.map(student => {
+      const studentName = `${student.firstName} ${student.lastName}`;
+      const isExceptionStudent = exceptionStudents.includes(studentName);
+      
       const studentCheckIns = checkIns.filter(checkIn => 
         checkIn.userId && checkIn.userId._id.toString() === student._id.toString()
       );
@@ -902,11 +920,11 @@ async function getStudentHoursFromDatabase(students, res) {
       for (const month of academicMonths) {
         let requiredForMonth;
         if (month === '09') {
-          // September: only 2 hours required
-          requiredForMonth = 2;
+          // September: exception students have 0 hours required, others have 2 hours
+          requiredForMonth = isExceptionStudent ? 0 : 2;
         } else {
-          // October onwards: 2.5 base hours + penalties from previous months
-          requiredForMonth = 2.5;
+          // October onwards: exception students have 1 base hour, others have 2.5 base hours + penalties from previous months
+          requiredForMonth = isExceptionStudent ? 1 : 2.5;
           
           // Add 50% penalty for each hour missed in previous months
           if (cumulativeMissedHours > 0) {
@@ -959,6 +977,14 @@ router.get('/student-stats', isAuthenticated, async (req, res) => {
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth() + 1; // 1-12
     const currentYear = currentDate.getFullYear();
+    
+    // Exception students with different hour requirements
+    const exceptionStudents = [
+      "Conor Moloney", "Ella Prentice", "Emilia Pabian", "Julia Kwiek", 
+      "Omar Ramos-Nava", "Sarah Pati", "Winnie Nutkowitz", "Julia Matula", 
+      "Evangelia Buzanis", "Tiannie Wang"
+    ];
+    const isExceptionStudent = exceptionStudents.includes(userName);
     
     // Get all tutoring sessions from Google Sheets
     const schedule = await googleSheetsService.getTutoringSchedule();
@@ -1042,11 +1068,11 @@ router.get('/student-stats', isAuthenticated, async (req, res) => {
         // Calculate required hours for this month
         let requiredForMonth;
         if (month === '09') {
-          // September 2025: only 2 hours required
-          requiredForMonth = 2;
+          // September 2025: exception students have 0 hours required, others have 2 hours
+          requiredForMonth = isExceptionStudent ? 0 : 2;
         } else {
-          // October onwards: 2.5 base hours + penalties from previous months (excluding September)
-          requiredForMonth = 2.5;
+          // October onwards: exception students have 1 base hour, others have 2.5 base hours + penalties from previous months (excluding September)
+          requiredForMonth = isExceptionStudent ? 1 : 2.5;
           
           // Add 50% penalty for each hour missed in previous months (excluding September)
           if (totalMissedHours > 0) {
