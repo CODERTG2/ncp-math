@@ -681,7 +681,7 @@ router.post('/checkin', isAuthenticated, async (req, res) => {
       sessionDate: sessionDate
     });
 
-    if (todayCheckIns >= 2) {
+    if (todayCheckIns >= 3) {
       return res.redirect('/check-in?error=' + encodeURIComponent('You have reached the maximum check-ins (2) for today from this device'));
     }
 
