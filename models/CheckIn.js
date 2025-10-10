@@ -59,19 +59,6 @@ checkInSchema.statics.canCheckIn = async function(userId, userName, sessionDate,
     };
   }
 
-  // Check device limit (2 check-ins per day per device)
-  const deviceCheckIns = await this.countDocuments({
-    deviceFingerprint,
-    sessionDate
-  });
-
-  if (deviceCheckIns >= 2) {
-    return {
-      canCheckIn: false,
-      reason: 'This device has reached the daily check-in limit (2 per day)'
-    };
-  }
-
   return {
     canCheckIn: true,
     reason: null

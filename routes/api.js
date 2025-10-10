@@ -675,16 +675,6 @@ router.post('/checkin', isAuthenticated, async (req, res) => {
       return res.redirect('/check-in?warning=' + encodeURIComponent('You have already checked in for this session'));
     }
 
-    // Check device fingerprint limit (max 2 check-ins per day per device)
-    const todayCheckIns = await CheckIn.countDocuments({
-      deviceFingerprint: deviceFingerprint,
-      sessionDate: sessionDate
-    });
-
-    if (todayCheckIns >= 3) {
-      return res.redirect('/check-in?error=' + encodeURIComponent('You have reached the maximum check-ins (2) for today from this device'));
-    }
-
     // Update check-in status in Google Sheets
     await googleSheetsService.updateTutorCheckIn(sessionDate, sessionTime, userName, true);
 
