@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MAT Portal - Mu Alpha Theta</title>
     <link rel="stylesheet" href="/css/mat.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
+
 <body>
     <!-- Navigation Bar -->
     <nav class="navbar" id="navbar">
@@ -19,6 +22,9 @@
                 </div>
                 <span class="nav-title">Mu Alpha Theta</span>
             </div>
+            <button class="mobile-menu-btn" onclick="document.querySelector('.nav-menu').classList.toggle('active')">
+                <i class="fas fa-bars"></i>
+            </button>
             <div class="nav-menu">
                 <button class="nav-btn" onclick="window.location.href='/resources'">
                     <i class="fas fa-book"></i>
@@ -28,7 +34,7 @@
                     <i class="fas fa-robot"></i>
                     AI
                 </button>
-                <% if (typeof user !== 'undefined' && user) { %>
+                <% if (typeof user !=='undefined' && user) { %>
                     <button class="nav-btn" onclick="window.location.href='/dashboard/<%= user.role %>'">
                         <i class="fas fa-tachometer-alt"></i>
                         Dashboard
@@ -37,12 +43,12 @@
                         <i class="fas fa-sign-out-alt"></i>
                         Logout
                     </button>
-                <% } else { %>
-                    <button class="nav-btn active" onclick="window.location.href='/mat'">
-                        <i class="fas fa-graduation-cap"></i>
-                        MAT Portal
-                    </button>
-                <% } %>
+                    <% } else { %>
+                        <button class="nav-btn active" onclick="window.location.href='/mat'">
+                            <i class="fas fa-graduation-cap"></i>
+                            MAT Portal
+                        </button>
+                        <% } %>
             </div>
         </div>
     </nav>
@@ -63,166 +69,191 @@
                 <!-- Body -->
                 <div class="auth-body">
                     <!-- Display Messages -->
-                    <% if (typeof error !== 'undefined' && error) { %>
+                    <% if (typeof error !=='undefined' && error) { %>
                         <div class="message error">
                             <i class="fas fa-exclamation-circle"></i>
                             <%= error %>
                         </div>
-                    <% } %>
-                    
-                    <% if (typeof success !== 'undefined' && success) { %>
-                        <div class="message success">
-                            <i class="fas fa-check-circle"></i>
-                            <%= success %>
-                        </div>
-                    <% } %>
-                    
-                    <% if (typeof warning !== 'undefined' && warning) { %>
-                        <div class="message warning">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <%= warning %>
-                        </div>
-                    <% } %>
+                        <% } %>
 
-                    <!-- Tab Navigation -->
-                    <div class="auth-tabs">
-                        <button class="auth-tab active" onclick="switchTab('login')">Login</button>
-                        <button class="auth-tab" onclick="switchTab('register')">Register</button>
-                    </div>
-
-                    <!-- Login Form -->
-                    <form class="auth-form active" id="loginForm" action="/auth/login" method="POST">
-                        <div class="form-group">
-                            <label for="loginEmail" class="form-label required">Email</label>
-                            <input type="email" id="loginEmail" name="email" class="form-input" required>
-                            <div class="field-error" id="loginEmailError"></div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="loginPassword" class="form-label required">Password</label>
-                            <div class="password-input-container">
-                                <input type="password" id="loginPassword" name="password" class="form-input" required>
-                                <button type="button" class="password-toggle" onclick="togglePassword('loginPassword')">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </div>
-                            <div class="field-error" id="loginPasswordError"></div>
-                        </div>
-
-                        <button type="submit" class="auth-button">
-                            <i class="fas fa-sign-in-alt"></i>
-                            Sign In
-                        </button>
-
-                        <div class="forgot-password">
-                            <a href="#" class="auth-link" onclick="showForgotPassword()">Forgot your password?</a>
-                        </div>
-                    </form>
-
-                    <!-- Register Form -->
-                    <form class="auth-form" id="registerForm" action="/auth/register" method="POST">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="firstName" class="form-label required">First Name</label>
-                                <input type="text" id="firstName" name="firstName" class="form-input" required>
-                                <div class="field-error" id="firstNameError"></div>
-                            </div>
-                            <div class="form-group">
-                                <label for="lastName" class="form-label required">Last Name</label>
-                                <input type="text" id="lastName" name="lastName" class="form-input" required>
-                                <div class="field-error" id="lastNameError"></div>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="username" class="form-label required">Username</label>
-                            <input type="text" id="username" name="username" class="form-input" required>
-                            <div class="field-error" id="usernameError"></div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="email" class="form-label required">Email</label>
-                            <input type="email" id="email" name="email" class="form-input" required>
-                            <div class="field-error" id="emailError"></div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label required">Role</label>
-                            <div class="role-selection">
-                                <div class="role-option">
-                                    <input type="radio" id="studentRole" name="role" value="student" class="role-input" required>
-                                    <label for="studentRole" class="role-label">
-                                        <i class="fas fa-user-graduate role-icon"></i>
-                                        <span class="role-text">Student</span>
-                                    </label>
+                            <% if (typeof success !=='undefined' && success) { %>
+                                <div class="message success">
+                                    <i class="fas fa-check-circle"></i>
+                                    <%= success %>
                                 </div>
-                                <div class="role-option">
-                                    <input type="radio" id="teacherRole" name="role" value="teacher" class="role-input" required>
-                                    <label for="teacherRole" class="role-label">
-                                        <i class="fas fa-chalkboard-teacher role-icon"></i>
-                                        <span class="role-text">Teacher</span>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="field-error" id="roleError"></div>
-                        </div>
+                                <% } %>
 
-                        <div class="form-group">
-                            <label for="password" class="form-label required">Password</label>
-                            <div class="password-input-container">
-                                <input type="password" id="password" name="password" class="form-input" required>
-                                <button type="button" class="password-toggle" onclick="togglePassword('password')">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </div>
-                            <div class="field-error" id="passwordError"></div>
-                            
-                            <div class="password-requirements">
-                                <h4>Password Requirements:</h4>
-                                <ul>
-                                    <li id="lengthReq" class="invalid">
-                                        <i class="fas fa-times"></i>
-                                        At least 8 characters long
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
+                                    <% if (typeof warning !=='undefined' && warning) { %>
+                                        <div class="message warning">
+                                            <i class="fas fa-exclamation-triangle"></i>
+                                            <%= warning %>
+                                        </div>
+                                        <% } %>
 
-                        <div class="form-group">
-                            <label for="confirmPassword" class="form-label required">Confirm Password</label>
-                            <div class="password-input-container">
-                                <input type="password" id="confirmPassword" name="confirmPassword" class="form-input" required>
-                                <button type="button" class="password-toggle" onclick="togglePassword('confirmPassword')">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </div>
-                            <div class="field-error" id="confirmPasswordError"></div>
-                        </div>
+                                            <!-- Tab Navigation -->
+                                            <div class="auth-tabs">
+                                                <button class="auth-tab active"
+                                                    onclick="switchTab('login')">Login</button>
+                                                <button class="auth-tab"
+                                                    onclick="switchTab('register')">Register</button>
+                                            </div>
 
-                        <button type="submit" class="auth-button">
-                            <i class="fas fa-user-plus"></i>
-                            Create Account
-                        </button>
-                    </form>
+                                            <!-- Login Form -->
+                                            <form class="auth-form active" id="loginForm" action="/auth/login"
+                                                method="POST">
+                                                <div class="form-group">
+                                                    <label for="loginEmail" class="form-label required">Email</label>
+                                                    <input type="email" id="loginEmail" name="email" class="form-input"
+                                                        required>
+                                                    <div class="field-error" id="loginEmailError"></div>
+                                                </div>
 
-                    <!-- Forgot Password Form (Hidden by default) -->
-                    <form class="auth-form" id="forgotPasswordForm" action="/auth/forgot-password" method="POST" style="display: none;">
-                        <div class="form-group">
-                            <label for="forgotEmail" class="form-label required">Email</label>
-                            <input type="email" id="forgotEmail" name="email" class="form-input" required>
-                            <div class="field-error" id="forgotEmailError"></div>
-                        </div>
+                                                <div class="form-group">
+                                                    <label for="loginPassword"
+                                                        class="form-label required">Password</label>
+                                                    <div class="password-input-container">
+                                                        <input type="password" id="loginPassword" name="password"
+                                                            class="form-input" required>
+                                                        <button type="button" class="password-toggle"
+                                                            onclick="togglePassword('loginPassword')">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                    </div>
+                                                    <div class="field-error" id="loginPasswordError"></div>
+                                                </div>
 
-                        <button type="submit" class="auth-button">
-                            <i class="fas fa-paper-plane"></i>
-                            Send Reset Link
-                        </button>
+                                                <button type="submit" class="auth-button">
+                                                    <i class="fas fa-sign-in-alt"></i>
+                                                    Sign In
+                                                </button>
 
-                        <button type="button" class="auth-button-secondary" onclick="hideForgotPassword()">
-                            <i class="fas fa-arrow-left"></i>
-                            Back to Login
-                        </button>
-                    </form>
+                                                <div class="forgot-password">
+                                                    <a href="#" class="auth-link" onclick="showForgotPassword()">Forgot
+                                                        your password?</a>
+                                                </div>
+                                            </form>
+
+                                            <!-- Register Form -->
+                                            <form class="auth-form" id="registerForm" action="/auth/register"
+                                                method="POST">
+                                                <div class="form-row">
+                                                    <div class="form-group">
+                                                        <label for="firstName" class="form-label required">First
+                                                            Name</label>
+                                                        <input type="text" id="firstName" name="firstName"
+                                                            class="form-input" required>
+                                                        <div class="field-error" id="firstNameError"></div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label for="lastName" class="form-label required">Last
+                                                            Name</label>
+                                                        <input type="text" id="lastName" name="lastName"
+                                                            class="form-input" required>
+                                                        <div class="field-error" id="lastNameError"></div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <label for="username" class="form-label required">Username</label>
+                                                    <input type="text" id="username" name="username" class="form-input"
+                                                        required>
+                                                    <div class="field-error" id="usernameError"></div>
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <label for="email" class="form-label required">Email</label>
+                                                    <input type="email" id="email" name="email" class="form-input"
+                                                        required>
+                                                    <div class="field-error" id="emailError"></div>
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <label class="form-label required">Role</label>
+                                                    <div class="role-selection">
+                                                        <div class="role-option">
+                                                            <input type="radio" id="studentRole" name="role"
+                                                                value="student" class="role-input" required>
+                                                            <label for="studentRole" class="role-label">
+                                                                <i class="fas fa-user-graduate role-icon"></i>
+                                                                <span class="role-text">Student</span>
+                                                            </label>
+                                                        </div>
+                                                        <div class="role-option">
+                                                            <input type="radio" id="teacherRole" name="role"
+                                                                value="teacher" class="role-input" required>
+                                                            <label for="teacherRole" class="role-label">
+                                                                <i class="fas fa-chalkboard-teacher role-icon"></i>
+                                                                <span class="role-text">Teacher</span>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="field-error" id="roleError"></div>
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <label for="password" class="form-label required">Password</label>
+                                                    <div class="password-input-container">
+                                                        <input type="password" id="password" name="password"
+                                                            class="form-input" required>
+                                                        <button type="button" class="password-toggle"
+                                                            onclick="togglePassword('password')">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                    </div>
+                                                    <div class="field-error" id="passwordError"></div>
+
+                                                    <div class="password-requirements">
+                                                        <h4>Password Requirements:</h4>
+                                                        <ul>
+                                                            <li id="lengthReq" class="invalid">
+                                                                <i class="fas fa-times"></i>
+                                                                At least 8 characters long
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <label for="confirmPassword" class="form-label required">Confirm
+                                                        Password</label>
+                                                    <div class="password-input-container">
+                                                        <input type="password" id="confirmPassword"
+                                                            name="confirmPassword" class="form-input" required>
+                                                        <button type="button" class="password-toggle"
+                                                            onclick="togglePassword('confirmPassword')">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                    </div>
+                                                    <div class="field-error" id="confirmPasswordError"></div>
+                                                </div>
+
+                                                <button type="submit" class="auth-button">
+                                                    <i class="fas fa-user-plus"></i>
+                                                    Create Account
+                                                </button>
+                                            </form>
+
+                                            <!-- Forgot Password Form (Hidden by default) -->
+                                            <form class="auth-form" id="forgotPasswordForm"
+                                                action="/auth/forgot-password" method="POST" style="display: none;">
+                                                <div class="form-group">
+                                                    <label for="forgotEmail" class="form-label required">Email</label>
+                                                    <input type="email" id="forgotEmail" name="email" class="form-input"
+                                                        required>
+                                                    <div class="field-error" id="forgotEmailError"></div>
+                                                </div>
+
+                                                <button type="submit" class="auth-button">
+                                                    <i class="fas fa-paper-plane"></i>
+                                                    Send Reset Link
+                                                </button>
+
+                                                <button type="button" class="auth-button-secondary"
+                                                    onclick="hideForgotPassword()">
+                                                    <i class="fas fa-arrow-left"></i>
+                                                    Back to Login
+                                                </button>
+                                            </form>
                 </div>
             </div>
         </div>
@@ -235,17 +266,19 @@
                 </div>
                 <h3 class="preview-title">Student Dashboard</h3>
                 <p class="preview-description">
-                    Access practice problems, track your progress, participate in competitions, and connect with fellow mathematicians.
+                    Access practice problems, track your progress, participate in competitions, and connect with fellow
+                    mathematicians.
                 </p>
             </div>
-            
+
             <div class="preview-card">
                 <div class="preview-icon">
                     <i class="fas fa-chalkboard-teacher"></i>
                 </div>
                 <h3 class="preview-title">Teacher Dashboard</h3>
                 <p class="preview-description">
-                    Create and manage assignments, monitor student progress, organize competitions, and access teaching resources.
+                    Create and manage assignments, monitor student progress, organize competitions, and access teaching
+                    resources.
                 </p>
             </div>
         </div>
@@ -259,12 +292,12 @@
             document.querySelectorAll('.auth-form').forEach(form => {
                 form.classList.remove('active');
             });
-            
+
             // Remove active class from all tabs
             document.querySelectorAll('.auth-tab').forEach(tab => {
                 tab.classList.remove('active');
             });
-            
+
             // Show selected form and activate tab
             if (tabName === 'login') {
                 document.getElementById('loginForm').classList.add('active');
@@ -273,7 +306,7 @@
                 document.getElementById('registerForm').classList.add('active');
                 document.querySelectorAll('.auth-tab')[1].classList.add('active');
             }
-            
+
             // Hide forgot password form if showing
             document.getElementById('forgotPasswordForm').style.display = 'none';
         }
@@ -282,7 +315,7 @@
         function togglePassword(inputId) {
             const input = document.getElementById(inputId);
             const icon = input.nextElementSibling.querySelector('i');
-            
+
             if (input.type === 'password') {
                 input.type = 'text';
                 icon.classList.remove('fa-eye');
@@ -311,14 +344,14 @@
         const confirmPasswordInput = document.getElementById('confirmPassword');
 
         if (passwordInput) {
-            passwordInput.addEventListener('input', function() {
+            passwordInput.addEventListener('input', function () {
                 const password = this.value;
-                
+
                 // Check length requirement only
                 const lengthValid = password.length >= 8;
                 const lengthElement = document.getElementById('lengthReq');
                 const icon = lengthElement.querySelector('i');
-                
+
                 if (lengthValid) {
                     lengthElement.classList.remove('invalid');
                     lengthElement.classList.add('valid');
@@ -335,11 +368,11 @@
 
         // Confirm password validation
         if (confirmPasswordInput) {
-            confirmPasswordInput.addEventListener('input', function() {
+            confirmPasswordInput.addEventListener('input', function () {
                 const password = passwordInput.value;
                 const confirmPassword = this.value;
                 const errorDiv = document.getElementById('confirmPasswordError');
-                
+
                 if (confirmPassword && password !== confirmPassword) {
                     this.classList.add('error');
                     errorDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> Passwords do not match';
@@ -352,7 +385,7 @@
 
         // Form submission with loading state
         document.querySelectorAll('form').forEach(form => {
-            form.addEventListener('submit', function(e) {
+            form.addEventListener('submit', function (e) {
                 const submitButton = this.querySelector('button[type="submit"]');
                 submitButton.classList.add('loading');
                 submitButton.disabled = true;
@@ -360,7 +393,7 @@
         });
 
         // Navbar scroll effect
-        window.addEventListener('scroll', function() {
+        window.addEventListener('scroll', function () {
             const navbar = document.getElementById('navbar');
             if (window.scrollY > 50) {
                 navbar.classList.add('scrolled');
@@ -371,7 +404,7 @@
 
         // Clear form errors on input
         document.querySelectorAll('.form-input').forEach(input => {
-            input.addEventListener('input', function() {
+            input.addEventListener('input', function () {
                 this.classList.remove('error');
                 const errorDiv = document.getElementById(this.name + 'Error');
                 if (errorDiv) {
@@ -381,4 +414,5 @@
         });
     </script>
 </body>
+
 </html>

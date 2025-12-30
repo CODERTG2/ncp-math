@@ -15,7 +15,7 @@
   --auth-error-light: #f87171;
   --auth-warning: #f59e0b;
   --auth-warning-light: #fbbf24;
-  
+
   /* Form Specific */
   --input-border: #d1d5db;
   --input-border-focus: var(--mu-blue);
@@ -26,7 +26,8 @@
 /* MAT Portal Main Container */
 .mat-portal {
   min-height: 100vh;
-  padding-top: 72px; /* Account for fixed navbar */
+  padding-top: 72px;
+  /* Account for fixed navbar */
   background: linear-gradient(135deg, var(--gray-50) 0%, #e2e8f0 25%, var(--gray-100) 50%, #f1f5f9 75%, var(--gray-50) 100%);
   background-size: 400% 400%;
   animation: gradientShift 15s ease infinite;
@@ -74,7 +75,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
+  background:
     radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
     radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.08) 0%, transparent 50%),
     radial-gradient(circle at 40% 60%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
@@ -180,8 +181,15 @@
 }
 
 @keyframes shimmer {
-  0%, 100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-  50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+
+  0%,
+  100% {
+    transform: translateX(-100%) translateY(-100%) rotate(45deg);
+  }
+
+  50% {
+    transform: translateX(100%) translateY(100%) rotate(45deg);
+  }
 }
 
 .auth-logo {
@@ -464,6 +472,7 @@
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -545,7 +554,7 @@
   box-shadow: var(--shadow-md);
 }
 
-.role-input:checked + .role-label {
+.role-input:checked+.role-label {
   border-color: var(--mu-blue);
   background: rgba(59, 130, 246, 0.05);
   color: var(--mu-blue);
@@ -612,8 +621,13 @@
 }
 
 @keyframes spin {
-  0% { transform: translate(-50%, -50%) rotate(0deg); }
-  100% { transform: translate(-50%, -50%) rotate(360deg); }
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
 }
 
 /* Secondary Button */
@@ -791,40 +805,223 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .auth-container {
-    padding: var(--space-lg);
+    padding: var(--space-md);
+    max-width: 100%;
   }
-  
+
   .auth-header {
     padding: var(--space-lg);
   }
-  
+
   .auth-body {
     padding: var(--space-lg);
   }
-  
+
   .form-row {
     grid-template-columns: 1fr;
   }
-  
+
   .role-selection {
     grid-template-columns: 1fr;
   }
-  
+
   .dashboard-preview {
     grid-template-columns: 1fr;
     padding: 0;
+  }
+
+  /* Calendar Mobile Styles */
+  .modern-calendar-container {
+    padding: 0.5rem;
+    border-radius: 20px;
+    overflow: visible;
+    /* Allow horizontal scroll to work */
+  }
+
+  .calendar-header-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .calendar-title-area {
+    width: 100%;
+  }
+
+  .user-greeting {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .modern-calendar-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 0.5rem;
+    padding: 0 0.25rem;
+    /* Ensure buttons aren't flush with edge */
+  }
+
+  .nav-button {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    font-size: 1rem;
+    background: rgba(255, 255, 255, 0.5);
+    /* More visible background - increased opacity */
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    /* Stronger border for visibility */
+    z-index: 20;
+    /* Ensure clickable */
+  }
+
+  .nav-button:hover {
+    background: rgba(255, 255, 255, 0.7);
+  }
+
+  .month-display {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    text-align: center;
+  }
+
+  .month-text {
+    font-size: 1.1rem;
+    line-height: 1.2;
+  }
+
+  /* Scrollable Calendar Grid */
+  .modern-calendar {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    /* Enable horizontal scroll */
+    border-radius: 16px;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    /* Explicitly allow panning */
+    padding: 0.5rem 1rem;
+    /* Add horizontal padding to prevent clipping at edges */
+  }
+
+  .modern-calendar::-webkit-scrollbar {
+    height: 4px;
+    /* Tiny scrollbar indicator */
+    display: block;
+  }
+
+  .modern-calendar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+  }
+
+  /* Force grid rows to extend beyond screen width */
+  .calendar-weekdays,
+  .calendar-days {
+    display: grid;
+    /* Re-affirm grid display */
+    /* Use minmax to FORCE width > screen width */
+    grid-template-columns: repeat(7, minmax(125px, 1fr)) !important;
+    /* Increased to 125px to accommodate session buttons and ensure alignment */
+    width: max-content;
+    /* Ensure container expands to fit grid */
+    min-width: 100%;
+    gap: 0;
+    /* Remove gap for proper alignment */
+    padding: 0 0.5rem;
+    /* Add horizontal padding to prevent clipping */
+  }
+
+  /* Adjust day cells for mobile */
+  .calendar-day {
+    min-height: 80px;
+    padding: 0.5rem;
+    margin: 0;
+    /* Remove margin for alignment */
+    border-radius: 8px;
+    /* Reduce border radius since no gap */
+  }
+
+  .day-number {
+    font-size: 1rem;
+  }
+
+  .session-indicator {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+  }
+
+  /* Modal Adjustments */
+  .modern-modal {
+    padding: 1rem;
+    align-items: flex-end;
+    /* Sheet style on mobile */
+  }
+
+  .modern-modal-content {
+    max-height: 90vh;
+    border-radius: 24px 24px 0 0;
+    /* Rounded top only */
+  }
+
+  .modal-header-modern {
+    padding: 1.5rem;
+  }
+
+  .modal-title-text {
+    font-size: 1.4rem;
+  }
+
+  .modal-body-modern {
+    padding: 1.5rem;
+  }
+
+  /* Session Cards in Modal */
+  .session-card {
+    padding: 1rem;
+  }
+
+  .session-time {
+    font-size: 1rem;
+  }
+
+  .session-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .signup-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Stats Cards Grid */
+  .stats-card .auth-body>div>div {
+    grid-template-columns: 1fr 1fr !important;
+    /* Keep 2 cols for stats if they fit, else 1 */
+    gap: 1rem !important;
+  }
+
+  @media (max-width: 400px) {
+    .stats-card .auth-body>div>div {
+      grid-template-columns: 1fr !important;
+    }
   }
 }
 
 @media (max-width: 480px) {
   .auth-container {
-    padding: var(--space-md);
+    padding: var(--space-sm);
   }
-  
+
   .auth-tabs {
     flex-direction: column;
   }
-  
+
   .auth-tab {
     margin-bottom: 2px;
   }
@@ -866,7 +1063,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
+  background:
     radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
     radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.08) 0%, transparent 50%),
     radial-gradient(circle at 40% 60%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
@@ -875,8 +1072,15 @@
 }
 
 @keyframes breathe {
-  0%, 100% { opacity: 0.7; }
-  50% { opacity: 1; }
+
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
 
 .modern-calendar-container::after {
@@ -892,8 +1096,13 @@
 }
 
 @keyframes shimmer-slow {
-  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+  0% {
+    transform: translateX(-100%) translateY(-100%) rotate(45deg);
+  }
+
+  100% {
+    transform: translateX(100%) translateY(100%) rotate(45deg);
+  }
 }
 
 .calendar-header-section {
@@ -971,8 +1180,15 @@
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-5px); }
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
 }
 
 .subtitle {
@@ -990,6 +1206,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 0.9;
     transform: translateY(0);
@@ -1182,7 +1399,8 @@
   background: var(--glass-bg);
   backdrop-filter: blur(20px);
   border-radius: 24px;
-  overflow: hidden;
+  overflow-y: hidden;
+  /* Only hide vertical overflow, allow horizontal scroll on mobile */
   box-shadow: var(--shadow-glow);
   border: 1px solid var(--glass-border);
   position: relative;
@@ -1303,8 +1521,17 @@
 }
 
 @keyframes pulse-glow {
-  0%, 100% { opacity: 0.5; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.02); }
+
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
 }
 
 .calendar-day.has-sessions {
@@ -1414,8 +1641,13 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Ultra-Modern Modal Styles 2025 */
@@ -1438,6 +1670,7 @@
     opacity: 0;
     backdrop-filter: blur(0px);
   }
+
   to {
     opacity: 1;
     backdrop-filter: blur(12px);
@@ -1456,8 +1689,13 @@
 }
 
 @keyframes backdropFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .modern-modal-content {
@@ -1468,7 +1706,7 @@
   width: 100%;
   max-height: 85vh;
   overflow: hidden;
-  box-shadow: 
+  box-shadow:
     0 32px 80px rgba(0, 0, 0, 0.2),
     0 0 0 1px rgba(255, 255, 255, 0.1);
   position: relative;
@@ -1481,6 +1719,7 @@
     opacity: 0;
     transform: translateY(40px) scale(0.9);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -1494,7 +1733,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
+  background:
     radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
     radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
   pointer-events: none;
@@ -1547,8 +1786,15 @@
 }
 
 @keyframes iconShimmer {
-  0%, 100% { left: -100%; }
-  50% { left: 100%; }
+
+  0%,
+  100% {
+    left: -100%;
+  }
+
+  50% {
+    left: 100%;
+  }
 }
 
 .modal-title-text {
@@ -1720,8 +1966,15 @@
 }
 
 @keyframes timeShimmer {
-  0%, 100% { left: -100%; }
-  50% { left: 100%; }
+
+  0%,
+  100% {
+    left: -100%;
+  }
+
+  50% {
+    left: 100%;
+  }
 }
 
 .session-capacity {
@@ -1765,8 +2018,15 @@
 }
 
 @keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.02); }
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.02);
+  }
 }
 
 .session-room {
@@ -1929,37 +2189,37 @@
     border-radius: 24px;
     margin: 0 1rem 2rem 1rem;
   }
-  
+
   .main-title {
     font-size: 2.5rem;
   }
-  
+
   .calendar-header-section {
     flex-direction: column;
     gap: 2rem;
     text-align: center;
   }
-  
+
   .user-greeting {
     order: -1;
     align-self: center;
   }
-  
+
   .modern-calendar-nav {
     gap: 2rem;
   }
-  
+
   .nav-button {
     width: 52px;
     height: 52px;
     font-size: 1.2rem;
   }
-  
+
   .calendar-day {
     min-height: 85px;
     padding: 0.9rem;
   }
-  
+
   .session-card {
     padding: 1.75rem;
   }
@@ -1971,100 +2231,100 @@
     border-radius: 20px;
     margin: 0 0.75rem 2rem 0.75rem;
   }
-  
+
   .main-title {
     font-size: 2rem;
   }
-  
+
   .subtitle {
     font-size: 1.1rem;
   }
-  
+
   .calendar-title-area {
     flex-direction: column;
     text-align: center;
     gap: 1rem;
   }
-  
+
   .title-icon {
     width: 64px;
     height: 64px;
     font-size: 1.5rem;
   }
-  
+
   .modern-calendar-nav {
     gap: 1.5rem;
   }
-  
+
   .nav-button {
     width: 48px;
     height: 48px;
     font-size: 1.1rem;
   }
-  
+
   .month-text {
     font-size: 1.8rem;
   }
-  
+
   .calendar-day {
     min-height: 75px;
     padding: 0.75rem;
   }
-  
+
   .day-number {
     font-size: 1rem;
     margin-bottom: 0.5rem;
   }
-  
+
   .session-indicator {
     font-size: 0.7rem;
     padding: 0.3rem 0.6rem;
     border-radius: 10px;
   }
-  
+
   .modern-modal {
     padding: 1rem;
   }
-  
+
   .modern-modal-content {
     border-radius: 24px;
     max-height: 90vh;
   }
-  
+
   .modal-header-modern {
     padding: 2rem 2rem 1.25rem 2rem;
     flex-direction: column;
     gap: 1.5rem;
     text-align: center;
   }
-  
+
   .modal-icon {
     width: 56px;
     height: 56px;
     font-size: 1.3rem;
   }
-  
+
   .modal-title-text {
     font-size: 1.6rem;
   }
-  
+
   .modal-body-modern {
     padding: 1.25rem 2rem 2rem 2rem;
     max-height: 70vh;
   }
-  
+
   .session-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
   }
-  
+
   .session-time {
     font-size: 1.1rem;
     align-self: stretch;
     text-align: center;
   }
-  
+
   .session-card {
     padding: 1.5rem;
   }
@@ -2076,108 +2336,108 @@
     padding: 1rem;
     border-radius: 16px;
   }
-  
+
   .main-title {
     font-size: 1.75rem;
   }
-  
+
   .subtitle {
     font-size: 1rem;
   }
-  
+
   .user-greeting {
     padding: 0.75rem 1.25rem;
     font-size: 0.95rem;
   }
-  
+
   .user-avatar {
     width: 40px;
     height: 40px;
     font-size: 1rem;
   }
-  
+
   .title-icon {
     width: 56px;
     height: 56px;
     font-size: 1.3rem;
   }
-  
+
   .modern-calendar-nav {
     gap: 1rem;
   }
-  
+
   .nav-button {
     width: 44px;
     height: 44px;
     font-size: 1rem;
   }
-  
+
   .month-text {
     font-size: 1.5rem;
   }
-  
+
   .weekday {
     padding: 1rem 0.5rem;
     font-size: 0.8rem;
     letter-spacing: 1px;
   }
-  
+
   .calendar-day {
     min-height: 65px;
     padding: 0.6rem;
     border-radius: 12px;
   }
-  
+
   .day-number {
     font-size: 0.9rem;
     margin-bottom: 0.4rem;
   }
-  
+
   .session-indicator {
     font-size: 0.65rem;
     padding: 0.25rem 0.5rem;
     border-radius: 8px;
   }
-  
+
   .modal-header-modern {
     padding: 1.5rem 1.5rem 1rem 1.5rem;
   }
-  
+
   .modal-title-section {
     flex-direction: column;
     gap: 1rem;
   }
-  
+
   .modal-icon {
     width: 48px;
     height: 48px;
     font-size: 1.2rem;
   }
-  
+
   .modal-title-text {
     font-size: 1.4rem;
   }
-  
+
   .modal-body-modern {
     padding: 1rem 1.5rem 1.5rem 1.5rem;
   }
-  
+
   .session-card {
     padding: 1.25rem;
     border-radius: 16px;
   }
-  
+
   .session-time {
     font-size: 1rem;
     padding: 0.6rem 1rem;
   }
-  
+
   .session-capacity,
   .cancelled-badge {
     padding: 0.6rem 1rem;
     font-size: 0.9rem;
   }
-  
+
   .signup-btn {
     padding: 1.1rem 1.5rem;
     font-size: 1rem;
@@ -2190,60 +2450,62 @@
     margin: 0 0.25rem 2rem 0.25rem;
     padding: 0.875rem;
   }
-  
+
   .main-title {
     font-size: 1.5rem;
   }
-  
+
   .subtitle {
     font-size: 0.9rem;
   }
-  
+
   .modern-calendar-nav {
     gap: 0.75rem;
   }
-  
+
   .nav-button {
     width: 40px;
     height: 40px;
     font-size: 0.9rem;
   }
-  
+
   .month-text {
     font-size: 1.3rem;
   }
-  
+
   .calendar-day {
     min-height: 55px;
     padding: 0.5rem;
   }
-  
+
   .day-number {
     font-size: 0.85rem;
   }
-  
+
   .session-indicator {
     font-size: 0.6rem;
     padding: 0.2rem 0.4rem;
   }
-  
+
   .session-card {
     padding: 1rem;
   }
-  
+
   .modal-body-modern {
     padding: 0.875rem 1.25rem 1.25rem 1.25rem;
   }
 }
 
 /* High DPI / Retina Display Optimizations */
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+@media (-webkit-min-device-pixel-ratio: 2),
+(min-resolution: 192dpi) {
+
   .modern-calendar-container::before,
   .modern-calendar-container::after {
     backface-visibility: hidden;
     perspective: 1000px;
   }
-  
+
   .session-indicator,
   .nav-button,
   .calendar-day {
@@ -2264,6 +2526,7 @@
 
 /* Reduced motion preferences */
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -2271,16 +2534,16 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-  
+
   .modern-calendar-container::before,
   .modern-calendar-container::after {
     animation: none;
   }
-  
+
   .main-title {
     animation: none;
   }
-  
+
   .subtitle {
     animation: none;
   }
@@ -2293,18 +2556,18 @@
     box-shadow: none !important;
     border-radius: 0 !important;
   }
-  
+
   .modern-calendar-nav,
   .user-greeting,
   .modern-close-btn {
     display: none !important;
   }
-  
+
   .calendar-day {
     background: white !important;
     border: 1px solid #ccc !important;
   }
-  
+
   .session-indicator {
     background: #333 !important;
     color: white !important;
@@ -2380,17 +2643,22 @@
 }
 
 @keyframes float-subtle {
-  0%, 100% { 
-    transform: translateY(0px) rotate(0deg); 
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
   }
-  25% { 
-    transform: translateY(-2px) rotate(1deg); 
+
+  25% {
+    transform: translateY(-2px) rotate(1deg);
   }
-  50% { 
-    transform: translateY(-1px) rotate(0deg); 
+
+  50% {
+    transform: translateY(-1px) rotate(0deg);
   }
-  75% { 
-    transform: translateY(-3px) rotate(-1deg); 
+
+  75% {
+    transform: translateY(-3px) rotate(-1deg);
   }
 }
 
@@ -2401,11 +2669,25 @@
   animation: staggerIn 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
 }
 
-.session-card:nth-child(1) { animation-delay: 0.1s; }
-.session-card:nth-child(2) { animation-delay: 0.2s; }
-.session-card:nth-child(3) { animation-delay: 0.3s; }
-.session-card:nth-child(4) { animation-delay: 0.4s; }
-.session-card:nth-child(5) { animation-delay: 0.5s; }
+.session-card:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.session-card:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.session-card:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.session-card:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+.session-card:nth-child(5) {
+  animation-delay: 0.5s;
+}
 
 @keyframes staggerIn {
   to {
@@ -2421,12 +2703,29 @@
   animation: dayReveal 0.4s cubic-bezier(0.23, 1, 0.32, 1) forwards;
 }
 
-.calendar-day:nth-child(-n+7) { animation-delay: 0.05s; }
-.calendar-day:nth-child(n+8):nth-child(-n+14) { animation-delay: 0.1s; }
-.calendar-day:nth-child(n+15):nth-child(-n+21) { animation-delay: 0.15s; }
-.calendar-day:nth-child(n+22):nth-child(-n+28) { animation-delay: 0.2s; }
-.calendar-day:nth-child(n+29):nth-child(-n+35) { animation-delay: 0.25s; }
-.calendar-day:nth-child(n+36) { animation-delay: 0.3s; }
+.calendar-day:nth-child(-n+7) {
+  animation-delay: 0.05s;
+}
+
+.calendar-day:nth-child(n+8):nth-child(-n+14) {
+  animation-delay: 0.1s;
+}
+
+.calendar-day:nth-child(n+15):nth-child(-n+21) {
+  animation-delay: 0.15s;
+}
+
+.calendar-day:nth-child(n+22):nth-child(-n+28) {
+  animation-delay: 0.2s;
+}
+
+.calendar-day:nth-child(n+29):nth-child(-n+35) {
+  animation-delay: 0.25s;
+}
+
+.calendar-day:nth-child(n+36) {
+  animation-delay: 0.3s;
+}
 
 @keyframes dayReveal {
   to {
@@ -2480,12 +2779,15 @@
 }
 
 @keyframes loadingPulse {
-  0%, 100% { 
-    opacity: 0.8; 
+
+  0%,
+  100% {
+    opacity: 0.8;
     transform: scale(1);
   }
-  50% { 
-    opacity: 1; 
+
+  50% {
+    opacity: 1;
     transform: scale(1.02);
   }
 }
@@ -2507,8 +2809,13 @@
 }
 
 @keyframes spin-reverse {
-  0% { transform: rotate(360deg); }
-  100% { transform: rotate(0deg); }
+  0% {
+    transform: rotate(360deg);
+  }
+
+  100% {
+    transform: rotate(0deg);
+  }
 }
 
 /* Text selection styling */
@@ -2529,7 +2836,7 @@
 
 /* Enhanced shadow system */
 .modern-calendar-container {
-  box-shadow: 
+  box-shadow:
     0 32px 80px rgba(0, 0, 0, 0.08),
     0 16px 40px rgba(0, 0, 0, 0.05),
     0 8px 20px rgba(0, 0, 0, 0.03),
@@ -2537,7 +2844,7 @@
 }
 
 .modern-modal-content {
-  box-shadow: 
+  box-shadow:
     0 32px 80px rgba(0, 0, 0, 0.2),
     0 16px 40px rgba(0, 0, 0, 0.1),
     0 8px 20px rgba(0, 0, 0, 0.05),
@@ -2581,13 +2888,13 @@
   .calendar-day {
     border: 2px solid #000;
   }
-  
+
   .session-indicator {
     background: #000 !important;
     color: #fff !important;
     border: 1px solid #fff;
   }
-  
+
   .nav-button,
   .signup-btn {
     border: 2px solid rgba(255, 255, 255, 0.8);

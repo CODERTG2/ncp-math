@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Hours Tracker - Mu Alpha Theta</title>
     <link rel="stylesheet" href="/css/mat.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .hours-tracker-container {
@@ -190,8 +192,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .table-scroll {
@@ -206,33 +213,34 @@
             .hours-tracker-container {
                 padding: 1rem;
             }
-            
+
             .tracker-title {
                 font-size: 2rem;
             }
-            
+
             .hours-table th,
             .hours-table td {
                 padding: 0.5rem 0.25rem;
                 font-size: 0.8rem;
             }
-            
+
             .month-super-header {
                 font-size: 0.8rem;
             }
-            
+
             .sub-header {
                 font-size: 0.7rem;
                 padding: 0.5rem 0.25rem;
                 min-width: 60px;
             }
-            
+
             .student-name-header {
                 min-width: 150px;
             }
         }
     </style>
 </head>
+
 <body>
     <!-- Navigation Bar -->
     <nav class="navbar" id="navbar">
@@ -243,6 +251,9 @@
                 </div>
                 <span class="nav-title">Mu Alpha Theta</span>
             </div>
+            <button class="mobile-menu-btn" onclick="document.querySelector('.nav-menu').classList.toggle('active')">
+                <i class="fas fa-bars"></i>
+            </button>
             <div class="nav-menu">
                 <button class="nav-btn" onclick="window.location.href='/resources'">
                     <i class="fas fa-book"></i>
@@ -277,7 +288,8 @@
                 <p class="tracker-subtitle">Monitor student attendance hours across the academic year</p>
                 <div style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.9;">
                     <strong>Requirements:</strong> 2 hours in September • 2.5 hours per month from October onwards<br>
-                    <strong>Penalty:</strong> Missing hours from October onwards increase future requirements by 50% (rounded down to nearest 0.5)<br>
+                    <strong>Penalty:</strong> Missing hours from October onwards increase future requirements by 50%
+                    (rounded down to nearest 0.5)<br>
                     <strong>Note:</strong> September missed hours must be made up but don't create penalties
                 </div>
             </div>
@@ -286,7 +298,7 @@
                 <div id="loadingContainer" class="loading-container">
                     <div class="loading-spinner"></div>
                 </div>
-                
+
                 <div id="tableContainer" style="display: none;">
                     <div class="table-scroll">
                         <table class="hours-table">
@@ -343,17 +355,17 @@
             try {
                 const response = await fetch('/api/student-hours');
                 const data = await response.json();
-                
+
                 if (data.error) {
                     throw new Error(data.error);
                 }
-                
+
                 populateTable(data.students);
-                
+
                 // Hide loading and show table
                 document.getElementById('loadingContainer').style.display = 'none';
                 document.getElementById('tableContainer').style.display = 'block';
-                
+
             } catch (error) {
                 console.error('Error loading student hours:', error);
                 document.getElementById('loadingContainer').innerHTML = `
@@ -375,7 +387,7 @@
 
             students.forEach(student => {
                 const row = document.createElement('tr');
-                
+
                 // Student name cell
                 const nameCell = document.createElement('td');
                 nameCell.textContent = `${student.firstName} ${student.lastName}`;
@@ -389,16 +401,16 @@
 
                 // Month cells (September through June) - now two cells per month
                 const months = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
-                
+
                 months.forEach(month => {
                     const hours = student.monthlyHours[month] || 0;
                     const required = student.monthlyRequirements ? student.monthlyRequirements[month] : (month === '09' ? 2 : 2.5);
-                    
+
                     // Hours Done cell
                     const hoursDoneCell = document.createElement('td');
                     hoursDoneCell.innerHTML = `<div class="hours-done-cell ${hours < required ? 'hours-done-low' : 'hours-done-good'}" title="Hours completed: ${hours}">${hours}</div>`;
                     row.appendChild(hoursDoneCell);
-                    
+
                     // Required Hours cell
                     const requiredCell = document.createElement('td');
                     requiredCell.innerHTML = `<div class="required-hours-cell" title="Required hours: ${required}">${required}</div>`;
@@ -415,4 +427,5 @@
         });
     </script>
 </body>
+
 </html>
