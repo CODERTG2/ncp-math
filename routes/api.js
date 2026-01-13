@@ -649,6 +649,15 @@ router.post('/checkin', isAuthenticated, async (req, res) => {
     const checkinWindowStart = new Date(sessionStartTime.getTime() - 15 * 60 * 1000);
     const checkinWindowEnd = new Date(sessionEndTime.getTime() + 15 * 60 * 1000);
 
+    console.log('--- Check-in Debug ---');
+    console.log('Server Time (UTC?):', new Date().toISOString());
+    console.log('Calculated "Now" (Chicago Wall Time in UTC docker):', now.toISOString());
+    console.log('Session Start:', sessionStartTime.toISOString());
+    console.log('Window Start:', checkinWindowStart.toISOString());
+    console.log('Window End:', checkinWindowEnd.toISOString());
+    console.log('Is valid?', now >= checkinWindowStart && now <= checkinWindowEnd);
+    console.log('----------------------');
+
     if (now < checkinWindowStart || now > checkinWindowEnd) {
       const timeInfo = sessionTime.includes(' - ')
         ? `between ${sessionTime}`
