@@ -208,6 +208,45 @@
         }
 
 
+        .view-toggle-btn {
+            background: white;
+            color: #64748b;
+            border: 2px solid #e5e7eb;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .view-toggle-btn:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+
+        .view-toggle-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .stats-cell {
+            font-weight: 600;
+            padding: 0.5rem;
+        }
+
+        .stats-good {
+            color: #059669;
+        }
+
+        .stats-behind {
+            color: #dc2626;
+        }
 
         @media (max-width: 768px) {
             .hours-tracker-container {
@@ -216,6 +255,11 @@
 
             .tracker-title {
                 font-size: 2rem;
+            }
+
+            .view-toggle-btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.875rem;
             }
 
             .hours-table th,
@@ -294,6 +338,18 @@
                 </div>
             </div>
 
+            <!-- View Toggle -->
+            <div style="margin-bottom: 2rem; display: flex; justify-content: center; gap: 1rem;">
+                <button id="monthlyViewBtn" class="view-toggle-btn active" onclick="switchView('monthly')">
+                    <i class="fas fa-calendar-alt"></i>
+                    Monthly Hours
+                </button>
+                <button id="statsViewBtn" class="view-toggle-btn" onclick="switchView('statistics')">
+                    <i class="fas fa-chart-line"></i>
+                    Key Statistics
+                </button>
+            </div>
+
             <div class="hours-table-container">
                 <div id="loadingContainer" class="loading-container">
                     <div class="loading-spinner"></div>
@@ -343,6 +399,35 @@
                                 <!-- Table content will be populated by JavaScript -->
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics View Container -->
+            <div id="statsTableContainer" style="display: none;">
+                <div class="hours-table-container">
+                    <div id="statsLoadingContainer" class="loading-container" style="display: none;">
+                        <div class="loading-spinner"></div>
+                    </div>
+
+                    <div id="statsContentContainer">
+                        <div class="table-scroll">
+                            <table class="hours-table">
+                                <thead>
+                                    <tr>
+                                        <th class="student-name-header">Student Name</th>
+                                        <th>Hours Tutored This Month</th>
+                                        <th>Hours Signed Up This Month</th>
+                                        <th>Hours Tutored This Year</th>
+                                        <th>Hours to Make Up So Far</th>
+                                        <th>Hours to Make Up (Whole Year)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="statsTableBody">
+                                    <!-- Statistics content will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -416,6 +501,131 @@
                     requiredCell.innerHTML = `<div class="required-hours-cell" title="Required hours: ${required}">${required}</div>`;
                     row.appendChild(requiredCell);
                 });
+
+                tbody.appendChild(row);
+            });
+        }
+
+        // View state
+        let currentView = 'monthly';
+        let statsData = null;
+
+        // Switch between views
+        function switchView(view) {
+            currentView = view;
+
+            const monthlyViewBtn = document.getElementById('monthlyViewBtn');
+            const statsViewBtn = document.getElementById('statsViewBtn');
+            const monthlyContainer = document.getElementById('tableContainer');
+            const statsContainer = document.getElementById('statsTableContainer');
+
+            if (view === 'monthly') {
+                monthlyViewBtn.classList.add('active');
+                statsViewBtn.classList.remove('active');
+                monthlyContainer.style.display = 'block';
+                statsContainer.style.display = 'none';
+            } else {
+                monthlyViewBtn.classList.remove('active');
+                statsViewBtn.classList.add('active');
+                monthlyContainer.style.display = 'none';
+                statsContainer.style.display = 'block';
+
+                // Load statistics if not already loaded
+                if (!statsData) {
+                    loadStudentStatistics();
+                }
+            }
+        }
+
+        // Load student statistics
+        async function loadStudentStatistics() {
+            const statsLoading = document.getElementById('statsLoadingContainer');
+            const statsContent = document.getElementById('statsContentContainer');
+
+            statsLoading.style.display = 'flex';
+            statsContent.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/all-students-stats');
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                statsData = data.students;
+                populateStatisticsTable(statsData);
+
+                statsLoading.style.display = 'none';
+                statsContent.style.display = 'block';
+
+            } catch (error) {
+                console.error('Error loading student statistics:', error);
+                statsLoading.innerHTML = `
+                    <div style="text-align: center; color: #dc2626;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                        <p>Error loading student statistics</p>
+                        <button onclick="loadStudentStatistics()" class="back-button" style="margin: 0;">
+                            <i class="fas fa-redo"></i>
+                            Retry
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Populate statistics table
+        function populateStatisticsTable(students) {
+            const tbody = document.getElementById('statsTableBody');
+            tbody.innerHTML = '';
+
+            // Sort students by last name
+            students.sort((a, b) => {
+                const nameA = `${a.lastName} ${a.firstName}`.toLowerCase();
+                const nameB = `${b.lastName} ${b.firstName}`.toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+
+            students.forEach(student => {
+                const row = document.createElement('tr');
+
+                // Student name cell
+                const nameCell = document.createElement('td');
+                nameCell.textContent = `${student.firstName} ${student.lastName}`;
+                nameCell.style.background = '#f8fafc';
+                nameCell.style.position = 'sticky';
+                nameCell.style.left = '0';
+                nameCell.style.zIndex = '9';
+                nameCell.style.borderRight = '2px solid #e5e7eb';
+                nameCell.style.fontWeight = '600';
+                row.appendChild(nameCell);
+
+                // Hours Tutored This Month
+                const tutoredMonthCell = document.createElement('td');
+                tutoredMonthCell.innerHTML = `<div class="stats-cell">${student.hoursTutoredThisMonth}</div>`;
+                row.appendChild(tutoredMonthCell);
+
+                // Hours Signed Up This Month
+                const signedUpMonthCell = document.createElement('td');
+                signedUpMonthCell.innerHTML = `<div class="stats-cell">${student.hoursSignedUpThisMonth}</div>`;
+                row.appendChild(signedUpMonthCell);
+
+                // Hours Tutored This Year
+                const tutoredYearCell = document.createElement('td');
+                tutoredYearCell.innerHTML = `<div class="stats-cell">${student.hoursTutoredThisYear}</div>`;
+                row.appendChild(tutoredYearCell);
+
+                // Hours to Make Up So Far (with color coding)
+                const makeUpSoFarCell = document.createElement('td');
+                const makeUpSoFarClass = student.hoursToMakeUpSoFar > 0 ? 'stats-behind' : 'stats-good';
+                makeUpSoFarCell.innerHTML = `<div class="stats-cell ${makeUpSoFarClass}">${student.hoursToMakeUpSoFar}</div>`;
+                row.appendChild(makeUpSoFarCell);
+
+                // Hours to Make Up Whole Year (with color coding)
+                const makeUpWholeYearCell = document.createElement('td');
+                const makeUpWholeYearClass = student.hoursToMakeUpWholeYear > 0 ? 'stats-behind' : 'stats-good';
+                makeUpWholeYearCell.innerHTML = `<div class="stats-cell ${makeUpWholeYearClass}">${student.hoursToMakeUpWholeYear}</div>`;
+                row.appendChild(makeUpWholeYearCell);
 
                 tbody.appendChild(row);
             });
