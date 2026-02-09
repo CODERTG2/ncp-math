@@ -228,6 +228,8 @@
                         <button class="tab-btn" onclick="switchSettingsTab('hours')" id="tab-hours"
                             style="padding: 0.5rem 1rem; background: none; border: none; font-weight: 500; cursor: pointer; color: #6b7280; border-bottom: 2px solid transparent;">Hour
                             Adjustments</button>
+                        <button class="tab-btn" onclick="switchSettingsTab('meetings')" id="tab-meetings"
+                            style="padding: 0.5rem 1rem; background: none; border: none; font-weight: 500; cursor: pointer; color: #6b7280; border-bottom: 2px solid transparent;">Meetings</button>
                     </div>
 
                     <!-- General Settings Tab -->
@@ -392,6 +394,64 @@
                                     </tr>
                                 </thead>
                                 <tbody id="adjustmentsTableBody">
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Meetings Tab -->
+                    <div id="content-meetings" class="tab-content" style="display: none;">
+                        <h4 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: #111827;">Create
+                            Meeting</h4>
+
+                        <form id="createMeetingForm"
+                            style="background: #f9fafb; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                            <div
+                                style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                <div class="auth-input-group">
+                                    <label class="auth-label">Title</label>
+                                    <input type="text" id="meetingTitle" class="auth-input"
+                                        placeholder="e.g. General Meeting" required>
+                                </div>
+                                <div class="auth-input-group">
+                                    <label class="auth-label">Code</label>
+                                    <div style="display: flex; gap: 0.5rem;">
+                                        <input type="text" id="meetingCode" class="auth-input"
+                                            placeholder="e.g. MATH2025" required>
+                                        <button type="button" class="auth-button" style="padding: 0.5rem; width: auto;"
+                                            onclick="generateMeetingCode()">
+                                            <i class="fas fa-random"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="auth-input-group">
+                                    <label class="auth-label">Value (Hours)</label>
+                                    <input type="number" id="meetingValue" class="auth-input" value="1.0" step="0.5"
+                                        required>
+                                </div>
+                            </div>
+                            <button type="submit" class="auth-button">
+                                <i class="fas fa-plus-circle"></i> Create Meeting
+                            </button>
+                        </form>
+
+                        <h4 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; color: #111827;">Recent
+                            Meetings</h4>
+                        <div style="max-height: 300px; overflow-y: auto;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                                <thead style="background: #f3f4f6;">
+                                    <tr>
+                                        <th style="padding: 0.5rem; text-align: left;">Date</th>
+                                        <th style="padding: 0.5rem; text-align: left;">Title</th>
+                                        <th style="padding: 0.5rem; text-align: center;">Code</th>
+                                        <th style="padding: 0.5rem; text-align: center;">Value</th>
+                                        <th style="padding: 0.5rem; text-align: center;">Attendees</th>
+                                        <th style="padding: 0.5rem; text-align: center;">Status</th>
+                                        <th style="padding: 0.5rem; text-align: right;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="meetingsTableBody">
                                     <!-- Populated via JS -->
                                 </tbody>
                             </table>
@@ -1110,6 +1170,99 @@
                 console.error('Error deleting adjustment:', error);
             }
         }
+
+        async function deleteAdjustment(id) {
+            if (!confirm('Are you sure you want to delete this adjustment?')) return;
+            try {
+                await fetch(`/api/hours/adjustments/${id}`, { method: 'DELETE' });
+                loadAdjustments();
+            } catch (error) {
+                console.error('Error deleting adjustment:', error);
+            }
+
+            // --- Meeting Management Functions ---
+
+            function generateMeetingCode() {
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+                let result = '';
+                for (let i = 0; i < 6; i++) {
+                    result += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                document.getElementById('meetingCode').value = result;
+            }
+
+            document.getElementById('createMeetingForm').addEventListener('submit', async function (e) {
+                e.preventDefault();
+                const title = document.getElementById('meetingTitle').value;
+                const code = document.getElementById('meetingCode').value;
+                const value = document.getElementById('meetingValue').value;
+
+                try {
+                    const response = await fetch('/api/meetings', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ title, code, value })
+                    });
+                    const result = await response.json();
+
+                    if (result.success) {
+                        alert('Meeting created successfully!');
+                        this.reset();
+                        loadMeetings();
+                    } else {
+                        alert(result.error || 'Failed to create meeting.');
+                    }
+                } catch (error) {
+                    console.error('Error creating meeting:', error);
+                }
+            });
+
+            async function loadMeetings() {
+                try {
+                    const response = await fetch('/api/meetings');
+                    const meetings = await response.json();
+
+                    const tbody = document.getElementById('meetingsTableBody');
+                    tbody.innerHTML = meetings.map(m => `
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 0.5rem;">${new Date(m.date).toLocaleDateString()}</td>
+                        <td style="padding: 0.5rem; font-weight: 500;">${m.title}</td>
+                        <td style="padding: 0.5rem; text-align: center; font-family: monospace; background: #f3f4f6; border-radius: 4px;">${m.code}</td>
+                        <td style="padding: 0.5rem; text-align: center;">${m.value}</td>
+                        <td style="padding: 0.5rem; text-align: center;">${m.attendees.length}</td>
+                        <td style="padding: 0.5rem; text-align: center;">
+                            <span style="padding: 0.25rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; background: ${m.isActive ? '#ecfdf5' : '#f3f4f6'}; color: ${m.isActive ? '#059669' : '#6b7280'};">
+                                ${m.isActive ? 'Active' : 'Closed'}
+                            </span>
+                        </td>
+                        <td style="padding: 0.5rem; text-align: right;">
+                            <button onclick="toggleMeetingContext('${m._id}')" style="color: #4f46e5; background: none; border: none; cursor: pointer; text-decoration: underline;">
+                                ${m.isActive ? 'Close' : 'Reopen'}
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+                } catch (error) {
+                    console.error('Error loading meetings:', error);
+                }
+            }
+
+            async function toggleMeetingContext(id) {
+                await toggleMeeting(id);
+            }
+
+            async function toggleMeeting(id) {
+                try {
+                    const response = await fetch(`/api/meetings/${id}/toggle`, { method: 'PATCH' });
+                    const result = await response.json();
+                    if (result.success) {
+                        loadMeetings();
+                    }
+                } catch (error) {
+                    console.error('Error toggling meeting:', error);
+                }
+            }
+
 
 
 

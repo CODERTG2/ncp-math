@@ -1609,5 +1609,107 @@ router.get('/all-students-stats', isAuthenticated, isTeacher, async (req, res) =
   }
 });
 
+import Meeting from '../models/Meeting.js';
+
+// --- MEETING ATTENDANCE ROUTES ---
+
+// Create a new meeting (Teacher only)
+router.post('/meetings', isAuthenticated, isTeacher, async (req, res) => {
+  try {
+    const { title, code, value } = req.body;
+
+    // Check if code already exists and is active
+    const existingMeeting = await Meeting.findOne({ code, isActive: true });
+    if (existingMeeting) {
+      return res.status(400).json({ error: 'A meeting with this code is already active.' });
+    }
+
+    const meeting = new Meeting({
+      title,
+      code,
+      value: value || 1.0
+    });
+
+    await meeting.save();
+    res.json({ success: true, meeting });
+  } catch (error) {
+    console.error('Error creating meeting:', error);
+    res.status(500).json({ error: 'Failed to create meeting' });
+  }
+});
+
+// Get recent meetings (Teacher only)
+router.get('/meetings', isAuthenticated, isTeacher, async (req, res) => {
+  try {
+    const meetings = await Meeting.find()
+      .sort({ date: -1 })
+      .limit(20)
+      .populate('attendees', 'firstName lastName email');
+    res.json(meetings);
+  } catch (error) {
+    console.error('Error fetching meetings:', error);
+    res.status(500).json({ error: 'Failed to fetch meetings' });
+  }
+});
+
+// Toggle meeting status
+router.patch('/meetings/:id/toggle', isAuthenticated, isTeacher, async (req, res) => {
+  try {
+    const meeting = await Meeting.findById(req.params.id);
+    if (!meeting) {
+      return res.status(404).json({ error: 'Meeting not found' });
+    }
+    meeting.isActive = !meeting.isActive;
+    await meeting.save();
+    res.json({ success: true, meeting });
+  } catch (error) {
+    console.error('Error toggling meeting:', error);
+    res.status(500).json({ error: 'Failed to update meeting' });
+  }
+});
+
+
+// Student submits attendance code
+router.post('/meetings/attend', isAuthenticated, async (req, res) => {
+  try {
+    const { code } = req.body;
+    const userId = req.user._id;
+
+    // Find active meeting with code
+    const meeting = await Meeting.findOne({ code, isActive: true });
+
+    if (!meeting) {
+      return res.status(400).json({ success: false, message: 'Invalid or inactive meeting code.' });
+    }
+
+    // Check if already attended
+    if (meeting.attendees.includes(userId)) {
+      return res.status(400).json({ success: false, message: 'You have already checked in for this meeting.' });
+    }
+
+    // Record attendance
+    meeting.attendees.push(userId);
+    await meeting.save();
+
+    // Grant hours via HourAdjustment
+    const adjustment = new HourAdjustment({
+      userId: userId,
+      amount: meeting.value,
+      reason: `Attended Meeting: ${meeting.title}`,
+      monthApplied: String(new Date().getMonth() + 1).padStart(2, '0'), // Current month
+      academicYear: new Date().getMonth() >= 8 ? new Date().getFullYear() : new Date().getFullYear() - 1 // Current academic year logic
+    });
+
+    await adjustment.save();
+
+    res.json({ success: true, message: `Check-in successful! +${meeting.value} hour(s) recorded.` });
+
+  } catch (error) {
+    console.error('Error submitting attendance:', error);
+    res.status(500).json({ success: false, message: 'Failed to process check-in.' });
+  }
+});
+
 export default router;
+
 
