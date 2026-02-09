@@ -84,6 +84,11 @@
                         <i class="fas fa-chart-bar"></i>
                         Student Hours Tracker
                     </button>
+                    <button class="auth-button" onclick="openSettingsModal()"
+                        style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); margin-left: 0.75rem;">
+                        <i class="fas fa-cog"></i>
+                        Settings & Admin
+                    </button>
                 </div>
 
                 <!-- Calendar Navigation -->
@@ -196,6 +201,205 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Settings & Admin Modal -->
+        <div id="settingsModal" class="modern-modal" style="display: none;">
+            <div class="modal-backdrop"></div>
+            <div class="modern-modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+                <div class="modal-header-modern">
+                    <div class="modal-title-section">
+                        <i class="fas fa-cogs modal-icon"></i>
+                        <h3 class="modal-title-text">Settings & Administration</h3>
+                    </div>
+                    <button class="modern-close-btn" id="closeSettingsModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body-modern">
+                    <!-- Tabs -->
+                    <div style="display: flex; border-bottom: 1px solid #e5e7eb; margin-bottom: 1.5rem; gap: 1rem;">
+                        <button class="tab-btn active" onclick="switchSettingsTab('general')" id="tab-general"
+                            style="padding: 0.5rem 1rem; background: none; border: none; font-weight: 500; cursor: pointer; border-bottom: 2px solid #8b5cf6; color: #8b5cf6;">General
+                            Settings</button>
+                        <button class="tab-btn" onclick="switchSettingsTab('members')" id="tab-members"
+                            style="padding: 0.5rem 1rem; background: none; border: none; font-weight: 500; cursor: pointer; color: #6b7280; border-bottom: 2px solid transparent;">Member
+                            Management</button>
+                        <button class="tab-btn" onclick="switchSettingsTab('hours')" id="tab-hours"
+                            style="padding: 0.5rem 1rem; background: none; border: none; font-weight: 500; cursor: pointer; color: #6b7280; border-bottom: 2px solid transparent;">Hour
+                            Adjustments</button>
+                    </div>
+
+                    <!-- General Settings Tab -->
+                    <div id="content-general" class="tab-content">
+                        <h4 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: #111827;">Global
+                            Configuration</h4>
+
+                        <div class="auth-input-group" style="margin-bottom: 1rem;">
+                            <label class="auth-label">Penalty Start Month</label>
+                            <select id="settingPenaltyMonth" class="auth-input">
+                                <option value="09">September (09)</option>
+                                <option value="10">October (10)</option>
+                                <option value="11">November (11)</option>
+                                <option value="12">December (12)</option>
+                                <option value="01">January (01)</option>
+                                <option value="02">February (02)</option>
+                                <option value="03">March (03)</option>
+                                <option value="04">April (04)</option>
+                                <option value="05">May (05)</option>
+                                <option value="06">June (06)</option>
+                            </select>
+                            <p style="font-size: 0.8rem; color: #6b7280; margin-top: 0.25rem;">The month from which
+                                missed hours start accumulating 50% penalty.</p>
+                        </div>
+
+                        <h4
+                            style="font-size: 1.1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 1rem; color: #111827;">
+                            Membership Requirements</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div style="padding: 1rem; background: #f9fafb; border-radius: 8px;">
+                                <h5 style="font-weight: 600; margin-bottom: 0.5rem;">New Members</h5>
+                                <div class="auth-input-group" style="margin-bottom: 0.5rem;">
+                                    <label class="auth-label">Base Hours / Month</label>
+                                    <input type="number" id="reqNewBase" class="auth-input" step="0.5">
+                                </div>
+                                <div class="auth-input-group">
+                                    <label class="auth-label">Penalty Rate</label>
+                                    <input type="number" id="reqNewPenalty" class="auth-input" step="0.1">
+                                </div>
+                            </div>
+                            <div style="padding: 1rem; background: #f9fafb; border-radius: 8px;">
+                                <h5 style="font-weight: 600; margin-bottom: 0.5rem;">Old Members</h5>
+                                <div class="auth-input-group" style="margin-bottom: 0.5rem;">
+                                    <label class="auth-label">Base Hours / Month</label>
+                                    <input type="number" id="reqOldBase" class="auth-input" step="0.5">
+                                </div>
+                                <div class="auth-input-group">
+                                    <label class="auth-label">Penalty Rate</label>
+                                    <input type="number" id="reqOldPenalty" class="auth-input" step="0.1">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="auth-button" onclick="saveGeneralSettings()"
+                            style="margin-top: 1.5rem; width: 100%;">
+                            <i class="fas fa-save"></i> Save Settings
+                        </button>
+                    </div>
+
+                    <!-- Member Management Tab -->
+                    <div id="content-members" class="tab-content" style="display: none;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h4 style="font-size: 1.1rem; font-weight: 600; color: #111827;">Student Classification</h4>
+                            <input type="text" id="memberSearch" placeholder="Search students..." class="auth-input"
+                                style="width: 250px; padding: 0.5rem;">
+                        </div>
+
+                        <div
+                            style="max-height: 400px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 8px;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead style="background: #f9fafb; position: sticky; top: 0;">
+                                    <tr>
+                                        <th
+                                            style="padding: 0.75rem; text-align: left; border-bottom: 1px solid #e5e7eb;">
+                                            Name</th>
+                                        <th
+                                            style="padding: 0.75rem; text-align: left; border-bottom: 1px solid #e5e7eb;">
+                                            Email</th>
+                                        <th
+                                            style="padding: 0.75rem; text-align: left; border-bottom: 1px solid #e5e7eb;">
+                                            Type</th>
+                                        <th
+                                            style="padding: 0.75rem; text-align: right; border-bottom: 1px solid #e5e7eb;">
+                                            Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="membersTableBody">
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Hour Adjustments Tab -->
+                    <div id="content-hours" class="tab-content" style="display: none;">
+                        <h4 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: #111827;">Add/Remove
+                            Hours</h4>
+
+                        <form id="hourAdjustmentForm"
+                            style="background: #f9fafb; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                <div class="auth-input-group">
+                                    <label class="auth-label">Target</label>
+                                    <select id="adjTarget" class="auth-input" onchange="toggleAdjUserSelect()">
+                                        <option value="all">All Students</option>
+                                        <option value="individual">Specific Student</option>
+                                    </select>
+                                </div>
+                                <div class="auth-input-group" id="adjUserSelectDiv" style="display: none;">
+                                    <label class="auth-label">Select Student</label>
+                                    <select id="adjUserId" class="auth-input">
+                                        <!-- Populated via JS -->
+                                    </select>
+                                </div>
+                            </div>
+                            <div
+                                style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                <div class="auth-input-group">
+                                    <label class="auth-label">Amount (Hours)</label>
+                                    <input type="number" id="adjAmount" class="auth-input" step="0.5"
+                                        placeholder="+/- value" required>
+                                </div>
+                                <div class="auth-input-group">
+                                    <label class="auth-label">Applied To Month</label>
+                                    <select id="adjMonth" class="auth-input" required>
+                                        <option value="09">September</option>
+                                        <option value="10">October</option>
+                                        <option value="11">November</option>
+                                        <option value="12">December</option>
+                                        <option value="01">January</option>
+                                        <option value="02">February</option>
+                                        <option value="03">March</option>
+                                        <option value="04">April</option>
+                                        <option value="05">May</option>
+                                        <option value="06">June</option>
+                                    </select>
+                                </div>
+                                <div class="auth-input-group">
+                                    <label class="auth-label">Reason</label>
+                                    <input type="text" id="adjReason" class="auth-input" placeholder="e.g. Extra credit"
+                                        required>
+                                </div>
+                            </div>
+                            <button type="submit" class="auth-button">
+                                <i class="fas fa-plus-circle"></i> Submit Adjustment
+                            </button>
+                        </form>
+
+                        <h4 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; color: #111827;">
+                            Adjustment History</h4>
+                        <div style="max-height: 250px; overflow-y: auto;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                                <thead style="background: #f3f4f6;">
+                                    <tr>
+                                        <th style="padding: 0.5rem; text-align: left;">Date</th>
+                                        <th style="padding: 0.5rem; text-align: left;">Target</th>
+                                        <th style="padding: 0.5rem; text-align: left;">Month</th>
+                                        <th style="padding: 0.5rem; text-align: right;">Amount</th>
+                                        <th style="padding: 0.5rem; text-align: left;">Reason</th>
+                                        <th style="padding: 0.5rem; text-align: right;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adjustmentsTableBody">
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         </div>
     </main>
 
@@ -367,6 +571,13 @@
                                 <i class="fas fa-save"></i> Save Changes
                             </button>
                         </div>
+                        <!-- Apply to future toggle -->
+                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e5e7eb; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" id="future-${dateKey}-${session.time.replace(/[^a-zA-Z0-9]/g, '')}" class="apply-future-check">
+                            <label for="future-${dateKey}-${session.time.replace(/[^a-zA-Z0-9]/g, '')}" style="font-size: 0.9rem; color: #4b5563; cursor: pointer;">
+                                Apply changes to all future sessions of this type (Same day & time)
+                            </label>
+                        </div>
                     </div>
                 </div>
                 `;
@@ -459,7 +670,8 @@
                             time: newTime,
                             maxTutors: maxTutors,
                             room: room
-                        }
+                        },
+                        applyToFuture: formElement.querySelector('.apply-future-check').checked
                     })
                 });
 
@@ -640,6 +852,267 @@
 
         // Initialize everything when page loads
         initializeCalendar();
+
+        // --- Settings & Admin Logic ---
+
+        let allStudents = [];
+        let globalSettings = {};
+
+        function openSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'flex';
+            loadSettings();
+            loadStudentsList(); // Load students when modal opens
+        }
+
+        document.getElementById('closeSettingsModal').addEventListener('click', () => {
+            document.getElementById('settingsModal').style.display = 'none';
+        });
+
+        // Switch Tabs
+        function switchSettingsTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('active');
+                el.style.color = '#6b7280';
+                el.style.borderBottomColor = 'transparent';
+            });
+
+            document.getElementById(`content-${tabName}`).style.display = 'block';
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            activeBtn.classList.add('active');
+            activeBtn.style.color = '#8b5cf6';
+            activeBtn.style.borderBottomColor = '#8b5cf6';
+
+            if (tabName === 'hours') {
+                loadAdjustments();
+            }
+        }
+
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/settings');
+                const settings = await response.json();
+                globalSettings = settings;
+
+                // Populate General Tab
+                document.getElementById('settingPenaltyMonth').value = settings.penaltyMonth;
+                document.getElementById('reqNewBase').value = settings.memberRequirements.New.baseHours;
+                document.getElementById('reqNewPenalty').value = settings.memberRequirements.New.penaltyRate;
+                document.getElementById('reqOldBase').value = settings.memberRequirements.Old.baseHours;
+                document.getElementById('reqOldPenalty').value = settings.memberRequirements.Old.penaltyRate;
+
+            } catch (error) {
+                console.error('Error loading settings:', error);
+            }
+        }
+
+        async function saveGeneralSettings() {
+            const updates = {
+                penaltyMonth: document.getElementById('settingPenaltyMonth').value,
+                memberRequirements: {
+                    New: {
+                        baseHours: parseFloat(document.getElementById('reqNewBase').value),
+                        penaltyRate: parseFloat(document.getElementById('reqNewPenalty').value)
+                    },
+                    Old: {
+                        baseHours: parseFloat(document.getElementById('reqOldBase').value),
+                        penaltyRate: parseFloat(document.getElementById('reqOldPenalty').value)
+                    },
+                    Officer: globalSettings.memberRequirements.Officer // Preserve officer settings
+                }
+            };
+
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updates)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert('Settings saved successfully!');
+                    globalSettings = result.settings;
+                } else {
+                    alert('Failed to save settings.');
+                }
+            } catch (error) {
+                console.error('Error saving settings:', error);
+                alert('Error saving settings.');
+            }
+        }
+
+        async function loadStudentsList() {
+            try {
+                const response = await fetch('/api/students-list');
+                const students = await response.json();
+                allStudents = students;
+                renderMembersTable(students);
+
+                // Populate student select for Adjustments
+                const select = document.getElementById('adjUserId');
+                select.innerHTML = students.map(s =>
+                    `<option value="${s._id}">${s.firstName} ${s.lastName}</option>`
+                ).join('');
+
+            } catch (error) {
+                console.error('Error loading students:', error);
+            }
+        }
+
+        function renderMembersTable(students) {
+            const tbody = document.getElementById('membersTableBody');
+            tbody.innerHTML = students.map(s => `
+                <tr style="border-bottom: 1px solid #f3f4f6;">
+                    <td style="padding: 0.75rem;">${s.firstName} ${s.lastName}</td>
+                    <td style="padding: 0.75rem; color: #6b7280; font-size: 0.85rem;">${s.email}</td>
+                    <td style="padding: 0.75rem;">
+                        <span style="
+                            padding: 0.25rem 0.5rem; 
+                            border-radius: 9999px; 
+                            font-size: 0.75rem; 
+                            font-weight: 500;
+                            ${s.memberType === 'Old' ? 'background: #dbeafe; color: #1e40af;' : 'background: #d1fae5; color: #065f46;'}
+                        ">
+                            ${s.memberType || 'New'}
+                        </span>
+                    </td>
+                    <td style="padding: 0.75rem; text-align: right;">
+                        <button onclick="toggleMemberType('${s._id}', '${s.memberType || 'New'}')" style="
+                            padding: 0.25rem 0.5rem; 
+                            border: 1px solid #e5e7eb; 
+                            background: white; 
+                            border-radius: 4px; 
+                            cursor: pointer;
+                            font-size: 0.8rem;
+                        ">
+                            Switch to ${s.memberType === 'Old' ? 'New' : 'Old'}
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        document.getElementById('memberSearch').addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = allStudents.filter(s =>
+                s.firstName.toLowerCase().includes(term) ||
+                s.lastName.toLowerCase().includes(term) ||
+                s.email.toLowerCase().includes(term)
+            );
+            renderMembersTable(filtered);
+        });
+
+        async function toggleMemberType(userId, currentType) {
+            const newType = currentType === 'Old' ? 'New' : 'Old';
+            try {
+                const response = await fetch('/api/members/update-type', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        updates: [{ userId, memberType: newType }]
+                    })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    // Update local list and re-render
+                    const student = allStudents.find(s => s._id === userId);
+                    if (student) student.memberType = newType;
+                    renderMembersTable(allStudents); // Re-render logic handles filtering if robust, but simple for now
+                    // Keep search filter if active
+                    const term = document.getElementById('memberSearch').value.toLowerCase();
+                    if (term) {
+                        const filtered = allStudents.filter(s =>
+                            s.firstName.toLowerCase().includes(term) ||
+                            s.lastName.toLowerCase().includes(term) ||
+                            s.email.toLowerCase().includes(term)
+                        );
+                        renderMembersTable(filtered);
+                    } else {
+                        renderMembersTable(allStudents);
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating member type:', error);
+                alert('Error updating member type.');
+            }
+        }
+
+        function toggleAdjUserSelect() {
+            const target = document.getElementById('adjTarget').value;
+            document.getElementById('adjUserSelectDiv').style.display = target === 'individual' ? 'block' : 'none';
+        }
+
+        document.getElementById('hourAdjustmentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const target = document.getElementById('adjTarget').value;
+            const userId = target === 'individual' ? document.getElementById('adjUserId').value : null;
+            const amount = parseFloat(document.getElementById('adjAmount').value);
+            const month = document.getElementById('adjMonth').value;
+            const reason = document.getElementById('adjReason').value;
+
+            try {
+                const response = await fetch('/api/hours/adjust', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId, amount, monthApplied: month, reason
+                    })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert('Adjustment created!');
+                    document.getElementById('hourAdjustmentForm').reset();
+                    loadAdjustments();
+                } else {
+                    alert('Failed to create adjustment.');
+                }
+            } catch (error) {
+                console.error('Error creating adjustment:', error);
+                alert('Error creating adjustment.');
+            }
+        });
+
+        async function loadAdjustments() {
+            try {
+                const response = await fetch('/api/hours/adjustments');
+                const adjustments = await response.json();
+
+                const tbody = document.getElementById('adjustmentsTableBody');
+                tbody.innerHTML = adjustments.map(adj => `
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 0.5rem;">${new Date(adj.createdAt).toLocaleDateString()}</td>
+                        <td style="padding: 0.5rem; font-weight: 500;">
+                            ${adj.userId ? `${adj.userId.firstName} ${adj.userId.lastName}` : '<span style="color: #6b7280;">All Students</span>'}
+                        </td>
+                        <td style="padding: 0.5rem;">${adj.monthApplied}</td>
+                        <td style="padding: 0.5rem; text-align: right; color: ${adj.amount >= 0 ? 'green' : 'red'};">
+                            ${adj.amount > 0 ? '+' : ''}${adj.amount}
+                        </td>
+                        <td style="padding: 0.5rem;">${adj.reason}</td>
+                        <td style="padding: 0.5rem; text-align: right;">
+                            <button onclick="deleteAdjustment('${adj._id}')" style="color: #ef4444; background: none; border: none; cursor: pointer;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading adjustments:', error);
+            }
+        }
+
+        async function deleteAdjustment(id) {
+            if (!confirm('Are you sure you want to delete this adjustment?')) return;
+            try {
+                await fetch(`/api/hours/adjustments/${id}`, { method: 'DELETE' });
+                loadAdjustments();
+            } catch (error) {
+                console.error('Error deleting adjustment:', error);
+            }
+        }
+
+
+
     </script>
 </body>
 
