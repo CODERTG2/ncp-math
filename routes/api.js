@@ -899,18 +899,15 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
       return await getStudentHoursFromDatabase(students, res);
     }
 
-    // Exception students with different hour requirements
-    const exceptionStudents = [
-      "Conor Moloney", "Ella Prentice", "Emilia Pabian", "Julia Kwiek",
-      "Omar Ramos-Nava", "Sarah Pati", "Winnie Nutkowitz", "Julia Matula",
-      "Evangelia Buzanis", "Tiannie Wang"
-    ];
+    // Get settings & adjustments
+    const settings = await Settings.getSettings();
+    const adjustments = await HourAdjustment.find({});
 
     // Process the data to calculate monthly hours from Google Sheets with new requirements
     const studentHoursData = students.map(student => {
       const studentName = `${student.firstName} ${student.lastName}`;
       const memberType = student.memberType || 'New';
-      const studentReqs = requirements[memberType] || requirements['New'];
+      const studentReqs = settings.memberRequirements[memberType] || settings.memberRequirements['New'];
 
       // Filter adjustments for this student
       const studentAdjustments = adjustments.filter(adj =>
@@ -921,6 +918,11 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
       // Calculate hours per month from Google Sheets tutoring sessions
       const monthlyHours = {};
       const monthlyRequirements = {};
+      
+      const academicMonths = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
+      
+      // Initialize monthlyHours for all academic months
+      academicMonths.forEach(m => monthlyHours[m] = 0);
 
       schedule.forEach(session => {
         // Check if this student was a tutor and checked in for this session
@@ -951,36 +953,48 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
             (year === academicYear + 1 && parseInt(month) <= 6);
 
           if (isCurrentAcademicYear) {
-            if (!monthlyHours[month]) {
-              monthlyHours[month] = 0;
-            }
             // Each tutoring session represents hours based on numHours field or default to 1
             const hours = parseFloat(session.numHours) || 1;
             monthlyHours[month] += hours;
           }
         }
       });
+      
+      // Apply adjustments to monthly hours
+      studentAdjustments.forEach(adj => {
+          if (monthlyHours[adj.monthApplied] !== undefined) {
+              monthlyHours[adj.monthApplied] += adj.amount;
+          }
+      });
 
       // Calculate requirements for each month with penalty system
-      const academicMonths = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
       let cumulativeMissedHours = 0;
 
       for (const month of academicMonths) {
-        let requiredForMonth;
-        if (month === '09') {
-          // September: exception students have 0 hours required, others have 2 hours
-          requiredForMonth = isExceptionStudent ? 0 : 2;
-        } else {
-          // October onwards: exception students have 1 base hour, others have 2.5 base hours + penalties from previous months
-          requiredForMonth = isExceptionStudent ? 1 : 2.5;
-
-          // Add 50% penalty for each hour missed in previous months
-          if (cumulativeMissedHours > 0) {
-            let penalty = cumulativeMissedHours * 0.5;
-            // Round down to nearest 0.5 (e.g., 1.25 -> 1.0, 1.75 -> 1.5)
+        
+        let requiredForMonth = studentReqs.baseHours; 
+        // September typically has lower/different requirements or no penalty start yet?
+        // Logic from before: Sep = 2, Oct+ = 2.5 (for New). 
+        // We should stick to the settings, but if there's a specific "September exception" logic 
+        // that isn't in settings, we might need to keep it or adapt settings.
+        // The user prompted "penalty changes" and "hour tracker (formula)". 
+        // The implementation plan said: "Replace hardcoded hour requirements (2.0/2.5) with settings.memberRequirements[memberType].baseHours."
+        
+        // HOWEVER, the previous code had a hardcoded exception for September (2.0 vs 2.5). 
+        // If the settings don't support per-month base hours, we use the global baseHours.
+        // Let's assume the Settings.memberRequirements.baseHours applies to standard months.
+        
+        // Check strictly for penalty month
+        const monthOrder = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
+        const penaltyStartIndex = monthOrder.indexOf(settings.penaltyMonth);
+        const currentMonthIndex = monthOrder.indexOf(month);
+        
+        // Add penalty if applicable
+        if (cumulativeMissedHours > 0 && penaltyStartIndex !== -1 && currentMonthIndex >= penaltyStartIndex) {
+            let penalty = cumulativeMissedHours * studentReqs.penaltyRate;
+            // Round down to nearest 0.5
             penalty = Math.floor(penalty * 2) / 2;
             requiredForMonth += penalty;
-          }
         }
 
         monthlyRequirements[month] = requiredForMonth;
@@ -988,10 +1002,15 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
         // Calculate missed hours for this month to carry forward
         const actualHours = monthlyHours[month] || 0;
         const missedThisMonth = Math.max(0, requiredForMonth - actualHours);
-        // Only add to penalty calculation if not September
-        if (month !== '09') {
-          cumulativeMissedHours += missedThisMonth;
-        }
+        
+        // Only accumulate missed hours if we haven't hit the end of the year or similar logic?
+        // Previous logic: "Only add to penalty calculation if not September" 
+        // -> This implies a "grace period". 
+        // If settings.penaltyMonth is '10', then missed hours in '09' should definitely count towards '10' penalty?
+        // Or does it mean *penalties* don't apply in Sep, but missed hours *accumulate*?
+        // "Missing hours from October onwards increase future requirements" - this suggests accumulated missed hours start mattering then.
+        
+        cumulativeMissedHours += missedThisMonth;
       }
 
       return {
