@@ -1171,59 +1171,52 @@
             }
         }
 
-        async function deleteAdjustment(id) {
-            if (!confirm('Are you sure you want to delete this adjustment?')) return;
+
+
+        // --- Meeting Management Functions ---
+
+        function generateMeetingCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < 6; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            document.getElementById('meetingCode').value = result;
+        }
+
+        document.getElementById('createMeetingForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const title = document.getElementById('meetingTitle').value;
+            const code = document.getElementById('meetingCode').value;
+            const value = document.getElementById('meetingValue').value;
+
             try {
-                await fetch(`/api/hours/adjustments/${id}`, { method: 'DELETE' });
-                loadAdjustments();
+                const response = await fetch('/api/meetings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, code, value })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Meeting created successfully!');
+                    this.reset();
+                    loadMeetings();
+                } else {
+                    alert(result.error || 'Failed to create meeting.');
+                }
             } catch (error) {
-                console.error('Error deleting adjustment:', error);
+                console.error('Error creating meeting:', error);
             }
+        });
 
-            // --- Meeting Management Functions ---
+        async function loadMeetings() {
+            try {
+                const response = await fetch('/api/meetings');
+                const meetings = await response.json();
 
-            function generateMeetingCode() {
-                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-                let result = '';
-                for (let i = 0; i < 6; i++) {
-                    result += chars.charAt(Math.floor(Math.random() * chars.length));
-                }
-                document.getElementById('meetingCode').value = result;
-            }
-
-            document.getElementById('createMeetingForm').addEventListener('submit', async function (e) {
-                e.preventDefault();
-                const title = document.getElementById('meetingTitle').value;
-                const code = document.getElementById('meetingCode').value;
-                const value = document.getElementById('meetingValue').value;
-
-                try {
-                    const response = await fetch('/api/meetings', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ title, code, value })
-                    });
-                    const result = await response.json();
-
-                    if (result.success) {
-                        alert('Meeting created successfully!');
-                        this.reset();
-                        loadMeetings();
-                    } else {
-                        alert(result.error || 'Failed to create meeting.');
-                    }
-                } catch (error) {
-                    console.error('Error creating meeting:', error);
-                }
-            });
-
-            async function loadMeetings() {
-                try {
-                    const response = await fetch('/api/meetings');
-                    const meetings = await response.json();
-
-                    const tbody = document.getElementById('meetingsTableBody');
-                    tbody.innerHTML = meetings.map(m => `
+                const tbody = document.getElementById('meetingsTableBody');
+                tbody.innerHTML = meetings.map(m => `
                     <tr style="border-bottom: 1px solid #e5e7eb;">
                         <td style="padding: 0.5rem;">${new Date(m.date).toLocaleDateString()}</td>
                         <td style="padding: 0.5rem; font-weight: 500;">${m.title}</td>
@@ -1242,26 +1235,26 @@
                         </td>
                     </tr>
                 `).join('');
-                } catch (error) {
-                    console.error('Error loading meetings:', error);
-                }
+            } catch (error) {
+                console.error('Error loading meetings:', error);
             }
+        }
 
-            async function toggleMeetingContext(id) {
-                await toggleMeeting(id);
-            }
+        async function toggleMeetingContext(id) {
+            await toggleMeeting(id);
+        }
 
-            async function toggleMeeting(id) {
-                try {
-                    const response = await fetch(`/api/meetings/${id}/toggle`, { method: 'PATCH' });
-                    const result = await response.json();
-                    if (result.success) {
-                        loadMeetings();
-                    }
-                } catch (error) {
-                    console.error('Error toggling meeting:', error);
+        async function toggleMeeting(id) {
+            try {
+                const response = await fetch(`/api/meetings/${id}/toggle`, { method: 'PATCH' });
+                const result = await response.json();
+                if (result.success) {
+                    loadMeetings();
                 }
+            } catch (error) {
+                console.error('Error toggling meeting:', error);
             }
+        }
 
 
 

@@ -906,9 +906,15 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
       "Evangelia Buzanis", "Tiannie Wang"
     ];
 
+    // Fetch settings and adjustments
+    const settings = await Settings.getSettings();
+    const requirements = settings.memberRequirements;
+    const adjustments = await HourAdjustment.find({});
+
     // Process the data to calculate monthly hours from Google Sheets with new requirements
     const studentHoursData = students.map(student => {
       const studentName = `${student.firstName} ${student.lastName}`;
+      const isExceptionStudent = exceptionStudents.includes(studentName);
       const memberType = student.memberType || 'New';
       const studentReqs = requirements[memberType] || requirements['New'];
 
@@ -1336,7 +1342,7 @@ router.get('/student-stats', isAuthenticated, async (req, res) => {
         projectedMissedHours += missedThisMonth;
       }
 
-      const hoursToMakeUpWholeYear = Math.max(0, totalRequiredWholeYear - totalHoursTutoredSoFar);
+      var hoursToMakeUpWholeYear = Math.max(0, totalRequiredWholeYear - totalHoursTutoredSoFar);
 
       hoursToMakeUp = hoursToMakeUpSoFar; // Keep for backwards compatibility
     }
@@ -1579,7 +1585,7 @@ router.get('/all-students-stats', isAuthenticated, isTeacher, async (req, res) =
           projectedMissedHours += missedThisMonth;
         }
 
-        const hoursToMakeUpWholeYear = Math.max(0, totalRequiredWholeYear - totalHoursTutoredSoFar);
+        var hoursToMakeUpWholeYear = Math.max(0, totalRequiredWholeYear - totalHoursTutoredSoFar);
 
         hoursToMakeUp = hoursToMakeUpSoFar; // Keep for backwards compatibility
       }
