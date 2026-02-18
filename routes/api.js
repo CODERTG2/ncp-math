@@ -7,6 +7,7 @@ import Settings from '../models/Settings.js';
 import HourAdjustment from '../models/HourAdjustment.js';
 import emailService from '../services/emailService.js';
 import { isAuthenticated } from '../middleware/auth.js';
+import Meeting from '../models/Meeting.js';
 
 const router = express.Router();
 
@@ -321,6 +322,13 @@ router.post('/members/update-type', isAuthenticated, isTeacher, async (req, res)
     const { updates } = req.body; // Array of { userId, memberType }
     if (!updates || !Array.isArray(updates)) {
       return res.status(400).json({ error: 'Invalid updates format' });
+    }
+
+    const allowedTypes = ['New', 'Old', 'Officer'];
+    for (const update of updates) {
+      if (!allowedTypes.includes(update.memberType)) {
+        return res.status(400).json({ error: `Invalid member type: ${update.memberType}. Allowed: ${allowedTypes.join(', ')}` });
+      }
     }
 
     const operations = updates.map(update => ({
@@ -880,7 +888,7 @@ router.post('/checkin', isAuthenticated, async (req, res) => {
 router.get('/student-hours', isAuthenticated, async (req, res) => {
   try {
     // Get all students
-    const students = await User.find({ role: 'student' }).select('firstName lastName');
+    const students = await User.find({ role: 'student' }).select('firstName lastName memberType');
 
     // Get tutoring schedule from Google Sheets (which includes tutor check-ins)
     let schedule = [];
@@ -907,7 +915,6 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
     // Process the data to calculate monthly hours from Google Sheets with new requirements
     const studentHoursData = students.map(student => {
       const studentName = `${student.firstName} ${student.lastName}`;
-      const isExceptionStudent = exceptionStudents.includes(studentName);
       const memberType = student.memberType || 'New';
       const studentReqs = settings.memberRequirements[memberType] || settings.memberRequirements['New'];
 
@@ -1034,28 +1041,37 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
 // Fallback function to use database check-ins if Google Sheets unavailable
 async function getStudentHoursFromDatabase(students, res) {
   try {
-    // Exception students with different hour requirements
-    const exceptionStudents = [
-      "Conor Moloney", "Ella Prentice", "Emilia Pabian", "Julia Kwiek",
-      "Omar Ramos-Nava", "Sarah Pati", "Winnie Nutkowitz", "Julia Matula",
-      "Evangelia Buzanis", "Tiannie Wang"
-    ];
-
+    // Get all check-ins from database
     // Get all check-ins from database
     const checkIns = await CheckIn.find({}).populate('userId', 'firstName lastName');
+
+    // Fetch settings and adjustments
+    const settings = await Settings.getSettings();
+    const adjustments = await HourAdjustment.find({});
 
     // Process the data to calculate monthly hours with new requirements
     const studentHoursData = students.map(student => {
       const studentName = `${student.firstName} ${student.lastName}`;
-      const isExceptionStudent = exceptionStudents.includes(studentName);
+      const memberType = student.memberType || 'New';
+      const studentReqs = settings.memberRequirements[memberType] || settings.memberRequirements['New'];
 
       const studentCheckIns = checkIns.filter(checkIn =>
         checkIn.userId && checkIn.userId._id.toString() === student._id.toString()
       );
 
+      // Filter adjustments for this student
+      const studentAdjustments = adjustments.filter(adj =>
+        (adj.userId && adj.userId.toString() === student._id.toString()) ||
+        adj.userId === null // Apply "All" adjustments
+      );
+
       // Calculate hours per month
       const monthlyHours = {};
       const monthlyRequirements = {};
+
+      // Initialize monthly hours for academic year
+      const academicMonths = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
+      academicMonths.forEach(m => monthlyHours[m] = 0);
 
       studentCheckIns.forEach(checkIn => {
         const date = new Date(checkIn.sessionDate);
@@ -1080,7 +1096,7 @@ async function getStudentHoursFromDatabase(students, res) {
           (year === academicYear + 1 && parseInt(month) <= 6);
 
         if (isCurrentAcademicYear) {
-          if (!monthlyHours[month]) {
+          if (monthlyHours[month] === undefined) {
             monthlyHours[month] = 0;
           }
           // Each check-in represents 1 hour
@@ -1088,26 +1104,30 @@ async function getStudentHoursFromDatabase(students, res) {
         }
       });
 
+      // Apply adjustments
+      studentAdjustments.forEach(adj => {
+        if (monthlyHours[adj.monthApplied] !== undefined) {
+          monthlyHours[adj.monthApplied] += adj.amount;
+        }
+      });
+
       // Calculate requirements for each month with penalty system
-      const academicMonths = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
       let cumulativeMissedHours = 0;
 
       for (const month of academicMonths) {
-        let requiredForMonth;
-        if (month === '09') {
-          // September: exception students have 0 hours required, others have 2 hours
-          requiredForMonth = isExceptionStudent ? 0 : 2;
-        } else {
-          // October onwards: exception students have 1 base hour, others have 2.5 base hours + penalties from previous months
-          requiredForMonth = isExceptionStudent ? 1 : 2.5;
 
-          // Add 50% penalty for each hour missed in previous months
-          if (cumulativeMissedHours > 0) {
-            let penalty = cumulativeMissedHours * 0.5;
-            // Round down to nearest 0.5 (e.g., 1.25 -> 1.0, 1.75 -> 1.5)
-            penalty = Math.floor(penalty * 2) / 2;
-            requiredForMonth += penalty;
-          }
+        let requiredForMonth = studentReqs.baseHours;
+
+        const monthOrder = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
+        const penaltyStartIndex = monthOrder.indexOf(settings.penaltyMonth);
+        const currentMonthIndex = monthOrder.indexOf(month);
+
+        // Add penalty if applicable
+        if (cumulativeMissedHours > 0 && penaltyStartIndex !== -1 && currentMonthIndex >= penaltyStartIndex) {
+          let penalty = cumulativeMissedHours * studentReqs.penaltyRate;
+          // Round down to nearest 0.5
+          penalty = Math.floor(penalty * 2) / 2;
+          requiredForMonth += penalty;
         }
 
         monthlyRequirements[month] = requiredForMonth;
@@ -1115,10 +1135,8 @@ async function getStudentHoursFromDatabase(students, res) {
         // Calculate missed hours for this month to carry forward
         const actualHours = monthlyHours[month] || 0;
         const missedThisMonth = Math.max(0, requiredForMonth - actualHours);
-        // Only add to penalty calculation if not September
-        if (month !== '09') {
-          cumulativeMissedHours += missedThisMonth;
-        }
+
+        cumulativeMissedHours += missedThisMonth;
       }
 
       return {
@@ -1226,6 +1244,9 @@ router.get('/student-stats', isAuthenticated, async (req, res) => {
     const yearAdjustments = adjustments.reduce((sum, adj) => sum + adj.amount, 0);
     hoursTutoredThisYear += yearAdjustments;
 
+
+    // Initialize whole year projection
+    let hoursToMakeUpWholeYear = 0;
 
     // Only calculate if we're in or past September 2025
     if (currentYear > 2025 || (currentYear === 2025 && currentMonth >= 9)) {
@@ -1357,7 +1378,7 @@ router.get('/student-stats', isAuthenticated, async (req, res) => {
         projectedMissedHours += missedThisMonth;
       }
 
-      var hoursToMakeUpWholeYear = Math.max(0, totalRequiredWholeYear - totalHoursTutoredSoFar);
+      hoursToMakeUpWholeYear = Math.max(0, totalRequiredWholeYear - totalHoursTutoredSoFar);
 
       hoursToMakeUp = hoursToMakeUpSoFar; // Keep for backwards compatibility
     }
@@ -1478,6 +1499,9 @@ router.get('/all-students-stats', isAuthenticated, isTeacher, async (req, res) =
 
       // Only calculate if we're in or past September 2025 (or just generally active)
       // The logic here should match student-stats
+      // Initialize whole year projection
+      let hoursToMakeUpWholeYear = 0;
+
       if (currentYear > 2025 || (currentYear === 2025 && currentMonth >= 9)) {
         // Determine current academic year first
         let academicYear;
@@ -1600,7 +1624,7 @@ router.get('/all-students-stats', isAuthenticated, isTeacher, async (req, res) =
           projectedMissedHours += missedThisMonth;
         }
 
-        var hoursToMakeUpWholeYear = Math.max(0, totalRequiredWholeYear - totalHoursTutoredSoFar);
+        hoursToMakeUpWholeYear = Math.max(0, totalRequiredWholeYear - totalHoursTutoredSoFar);
 
         hoursToMakeUp = hoursToMakeUpSoFar; // Keep for backwards compatibility
       }
@@ -1630,7 +1654,7 @@ router.get('/all-students-stats', isAuthenticated, isTeacher, async (req, res) =
   }
 });
 
-import Meeting from '../models/Meeting.js';
+// Moved to top of file
 
 // --- MEETING ATTENDANCE ROUTES ---
 
@@ -1638,6 +1662,10 @@ import Meeting from '../models/Meeting.js';
 router.post('/meetings', isAuthenticated, isTeacher, async (req, res) => {
   try {
     const { title, code, value } = req.body;
+
+    if (!title || !code) {
+      return res.status(400).json({ error: 'Title and code are required.' });
+    }
 
     // Check if code already exists and is active
     const existingMeeting = await Meeting.findOne({ code, isActive: true });
@@ -1648,7 +1676,7 @@ router.post('/meetings', isAuthenticated, isTeacher, async (req, res) => {
     const meeting = new Meeting({
       title,
       code,
-      value: value || 1.0
+      value: typeof value === 'number' ? value : parseFloat(value) || 1.0
     });
 
     await meeting.save();
@@ -1704,7 +1732,11 @@ router.post('/meetings/attend', isAuthenticated, async (req, res) => {
     }
 
     // Check if already attended
-    if (meeting.attendees.includes(userId)) {
+    const alreadyAttended = meeting.attendees.some(attendeeId =>
+      attendeeId.toString() === userId.toString()
+    );
+
+    if (alreadyAttended) {
       return res.status(400).json({ success: false, message: 'You have already checked in for this meeting.' });
     }
 
