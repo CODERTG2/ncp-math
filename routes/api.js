@@ -3,6 +3,8 @@ import googleSheetsService from '../services/googleSheetsService.js';
 import SessionSignup from '../models/SessionSignup.js';
 import User from '../models/User.js';
 import CheckIn from '../models/CheckIn.js';
+import Settings from '../models/Settings.js';
+import HourAdjustment from '../models/HourAdjustment.js';
 import emailService from '../services/emailService.js';
 import { isAuthenticated } from '../middleware/auth.js';
 
@@ -285,6 +287,119 @@ router.get('/my-signups', isAuthenticated, async (req, res) => {
   }
 });
 
+// --- Settings & Configuration Routes ---
+
+// Get current settings
+router.get('/settings', isAuthenticated, async (req, res) => {
+  try {
+    const settings = await Settings.getSettings();
+    res.json(settings);
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    res.status(500).json({ error: 'Failed to fetch settings' });
+  }
+});
+
+// Update settings (teachers only)
+router.post('/settings', isAuthenticated, isTeacher, async (req, res) => {
+  try {
+    const settings = await Settings.getSettings();
+    if (req.body.penaltyMonth) settings.penaltyMonth = req.body.penaltyMonth;
+    if (req.body.memberRequirements) settings.memberRequirements = req.body.memberRequirements;
+    if (req.body.sessionDefaults) settings.sessionDefaults = req.body.sessionDefaults;
+    await settings.save();
+    res.json({ success: true, settings });
+  } catch (error) {
+    console.error('Error updating settings:', error);
+    res.status(500).json({ error: 'Failed to update settings' });
+  }
+});
+
+// Batch update member types (teachers only)
+router.post('/members/update-type', isAuthenticated, isTeacher, async (req, res) => {
+  try {
+    const { updates } = req.body; // Array of { userId, memberType }
+    if (!updates || !Array.isArray(updates)) {
+      return res.status(400).json({ error: 'Invalid updates format' });
+    }
+
+    const operations = updates.map(update => ({
+      updateOne: {
+        filter: { _id: update.userId },
+        update: { $set: { memberType: update.memberType } }
+      }
+    }));
+
+    if (operations.length > 0) {
+      await User.bulkWrite(operations);
+    }
+
+    res.json({ success: true, message: 'Member types updated' });
+  } catch (error) {
+    console.error('Error updating member types:', error);
+    res.status(500).json({ error: 'Failed to update member types' });
+  }
+});
+
+// Create hour adjustment (teachers only)
+router.post('/hours/adjust', isAuthenticated, isTeacher, async (req, res) => {
+  try {
+    const { userId, amount, reason, monthApplied } = req.body;
+
+    // Validate inputs
+    if (amount === undefined || !reason || !monthApplied) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const adjustment = new HourAdjustment({
+      userId: userId || null, // null means "All"
+      amount,
+      reason,
+      monthApplied
+    });
+
+    await adjustment.save();
+    res.json({ success: true, adjustment });
+  } catch (error) {
+    console.error('Error creating hour adjustment:', error);
+    res.status(500).json({ error: 'Failed to create adjustment' });
+  }
+});
+
+// Get hour adjustments (teachers only)
+router.get('/hours/adjustments', isAuthenticated, isTeacher, async (req, res) => {
+  try {
+    const adjustments = await HourAdjustment.find().populate('userId', 'firstName lastName').sort({ createdAt: -1 });
+    res.json(adjustments);
+  } catch (error) {
+    console.error('Error fetching adjustments:', error);
+    res.status(500).json({ error: 'Failed to fetch adjustments' });
+  }
+});
+
+// Delete hour adjustment
+router.delete('/hours/adjustments/:id', isAuthenticated, isTeacher, async (req, res) => {
+  try {
+    await HourAdjustment.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting adjustment:', error);
+    res.status(500).json({ error: 'Failed to delete adjustment' });
+  }
+});
+
+// Get all students with their member type (teachers only) - simplified list
+router.get('/students-list', isAuthenticated, isTeacher, async (req, res) => {
+  try {
+    const students = await User.find({ role: 'student' }).select('firstName lastName memberType email');
+    res.json(students);
+  } catch (error) {
+    console.error('Error fetching students list:', error);
+    res.status(500).json({ error: 'Failed to fetch students' });
+  }
+});
+
+
 // Teacher-only endpoints
 function isTeacher(req, res, next) {
   if (req.user.role !== 'teacher') {
@@ -294,11 +409,12 @@ function isTeacher(req, res, next) {
 }
 
 // Update session details (teachers only)
+// Update session details (teachers only)
 router.post('/update-session', isAuthenticated, isTeacher, async (req, res) => {
   try {
-    const { date, time, updates } = req.body;
+    const { date, time, updates, applyToFuture } = req.body; // Added applyToFuture
 
-    console.log('Update session request:', { date, time, updates });
+    console.log('Update session request:', { date, time, updates, applyToFuture });
 
     // Validate required fields
     if (!date || !time || !updates) {
@@ -348,6 +464,38 @@ router.post('/update-session', isAuthenticated, isTeacher, async (req, res) => {
     // Update the session in Google Sheets first
     console.log('Updating session in Google Sheets...');
     await googleSheetsService.updateSession(date, time, updates);
+
+    // Provide a way to update future sessions if requested
+    if (applyToFuture) {
+      try {
+        const allSessions = await googleSheetsService.getTutoringSchedule();
+        const currentSessionDate = new Date(date);
+        // find subsequent sessions with same day/time
+        // We need to match day of week and time.
+        // The simple check is: same time, date > currentSessionDate
+
+        // However, "Apply to future sessions" usually implies "sessions of this series".
+        // Since we don't have series IDs, we'll assume same Day of Week + Same Time + Same Room (maybe?)
+        // Let's stick to Same Time + Same Day of Week (implicit in date) + Date > current
+
+        const targetDay = currentSession.day;
+
+        const futureSessions = allSessions.filter(s => {
+          const sDate = new Date(s.date);
+          return sDate > currentSessionDate && s.time === time && s.day === targetDay;
+        });
+
+        console.log(`Found ${futureSessions.length} future sessions to update.`);
+
+        for (const fs of futureSessions) {
+          await googleSheetsService.updateSession(fs.date, fs.time, updates);
+        }
+      } catch (futureError) {
+        console.error('Error updating future sessions:', futureError);
+        // Don't fail the request, just log it
+      }
+    }
+
     console.log('Session updated in Google Sheets successfully');
 
     // Determine what changed
@@ -751,21 +899,32 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
       return await getStudentHoursFromDatabase(students, res);
     }
 
-    // Exception students with different hour requirements
-    const exceptionStudents = [
-      "Conor Moloney", "Ella Prentice", "Emilia Pabian", "Julia Kwiek",
-      "Omar Ramos-Nava", "Sarah Pati", "Winnie Nutkowitz", "Julia Matula",
-      "Evangelia Buzanis", "Tiannie Wang"
-    ];
+    // Fetch settings and adjustments
+    const settings = await Settings.getSettings();
+    const requirements = settings.memberRequirements;
+    const adjustments = await HourAdjustment.find({});
 
     // Process the data to calculate monthly hours from Google Sheets with new requirements
     const studentHoursData = students.map(student => {
       const studentName = `${student.firstName} ${student.lastName}`;
       const isExceptionStudent = exceptionStudents.includes(studentName);
+      const memberType = student.memberType || 'New';
+      const studentReqs = settings.memberRequirements[memberType] || settings.memberRequirements['New'];
+
+      // Filter adjustments for this student
+      const studentAdjustments = adjustments.filter(adj =>
+        (adj.userId && adj.userId.toString() === student._id.toString()) ||
+        adj.userId === null // Apply "All" adjustments
+      );
 
       // Calculate hours per month from Google Sheets tutoring sessions
       const monthlyHours = {};
       const monthlyRequirements = {};
+
+      const academicMonths = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
+
+      // Initialize monthlyHours for all academic months
+      academicMonths.forEach(m => monthlyHours[m] = 0);
 
       schedule.forEach(session => {
         // Check if this student was a tutor and checked in for this session
@@ -796,9 +955,6 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
             (year === academicYear + 1 && parseInt(month) <= 6);
 
           if (isCurrentAcademicYear) {
-            if (!monthlyHours[month]) {
-              monthlyHours[month] = 0;
-            }
             // Each tutoring session represents hours based on numHours field or default to 1
             const hours = parseFloat(session.numHours) || 1;
             monthlyHours[month] += hours;
@@ -806,26 +962,41 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
         }
       });
 
+      // Apply adjustments to monthly hours
+      studentAdjustments.forEach(adj => {
+        if (monthlyHours[adj.monthApplied] !== undefined) {
+          monthlyHours[adj.monthApplied] += adj.amount;
+        }
+      });
+
       // Calculate requirements for each month with penalty system
-      const academicMonths = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
       let cumulativeMissedHours = 0;
 
       for (const month of academicMonths) {
-        let requiredForMonth;
-        if (month === '09') {
-          // September: exception students have 0 hours required, others have 2 hours
-          requiredForMonth = isExceptionStudent ? 0 : 2;
-        } else {
-          // October onwards: exception students have 1 base hour, others have 2.5 base hours + penalties from previous months
-          requiredForMonth = isExceptionStudent ? 1 : 2.5;
 
-          // Add 50% penalty for each hour missed in previous months
-          if (cumulativeMissedHours > 0) {
-            let penalty = cumulativeMissedHours * 0.5;
-            // Round down to nearest 0.5 (e.g., 1.25 -> 1.0, 1.75 -> 1.5)
-            penalty = Math.floor(penalty * 2) / 2;
-            requiredForMonth += penalty;
-          }
+        let requiredForMonth = studentReqs.baseHours;
+        // September typically has lower/different requirements or no penalty start yet?
+        // Logic from before: Sep = 2, Oct+ = 2.5 (for New). 
+        // We should stick to the settings, but if there's a specific "September exception" logic 
+        // that isn't in settings, we might need to keep it or adapt settings.
+        // The user prompted "penalty changes" and "hour tracker (formula)". 
+        // The implementation plan said: "Replace hardcoded hour requirements (2.0/2.5) with settings.memberRequirements[memberType].baseHours."
+
+        // HOWEVER, the previous code had a hardcoded exception for September (2.0 vs 2.5). 
+        // If the settings don't support per-month base hours, we use the global baseHours.
+        // Let's assume the Settings.memberRequirements.baseHours applies to standard months.
+
+        // Check strictly for penalty month
+        const monthOrder = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
+        const penaltyStartIndex = monthOrder.indexOf(settings.penaltyMonth);
+        const currentMonthIndex = monthOrder.indexOf(month);
+
+        // Add penalty if applicable
+        if (cumulativeMissedHours > 0 && penaltyStartIndex !== -1 && currentMonthIndex >= penaltyStartIndex) {
+          let penalty = cumulativeMissedHours * studentReqs.penaltyRate;
+          // Round down to nearest 0.5
+          penalty = Math.floor(penalty * 2) / 2;
+          requiredForMonth += penalty;
         }
 
         monthlyRequirements[month] = requiredForMonth;
@@ -833,10 +1004,15 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
         // Calculate missed hours for this month to carry forward
         const actualHours = monthlyHours[month] || 0;
         const missedThisMonth = Math.max(0, requiredForMonth - actualHours);
-        // Only add to penalty calculation if not September
-        if (month !== '09') {
-          cumulativeMissedHours += missedThisMonth;
-        }
+
+        // Only accumulate missed hours if we haven't hit the end of the year or similar logic?
+        // Previous logic: "Only add to penalty calculation if not September" 
+        // -> This implies a "grace period". 
+        // If settings.penaltyMonth is '10', then missed hours in '09' should definitely count towards '10' penalty?
+        // Or does it mean *penalties* don't apply in Sep, but missed hours *accumulate*?
+        // "Missing hours from October onwards increase future requirements" - this suggests accumulated missed hours start mattering then.
+
+        cumulativeMissedHours += missedThisMonth;
       }
 
       return {
@@ -977,13 +1153,12 @@ router.get('/student-stats', isAuthenticated, async (req, res) => {
     const currentMonth = currentDate.getMonth() + 1; // 1-12
     const currentYear = currentDate.getFullYear();
 
-    // Exception students with different hour requirements
-    const exceptionStudents = [
-      "Conor Moloney", "Ella Prentice", "Emilia Pabian", "Julia Kwiek",
-      "Omar Ramos-Nava", "Sarah Pati", "Winnie Nutkowitz", "Julia Matula",
-      "Evangelia Buzanis", "Tiannie Wang"
-    ];
-    const isExceptionStudent = exceptionStudents.includes(userName);
+    // Get settings & adjustments (simplified for stats - ideally share logic)
+    // For specific student stats, we need to replicate the logic
+    const settings = await Settings.getSettings();
+    const adjustments = await HourAdjustment.find({
+      $or: [{ userId: req.user._id }, { userId: null }]
+    });
 
     // Get all tutoring sessions from Google Sheets
     const schedule = await googleSheetsService.getTutoringSchedule();
@@ -1035,6 +1210,22 @@ router.get('/student-stats', isAuthenticated, async (req, res) => {
 
     // Calculate hours to make up with new requirements and penalty system
     let hoursToMakeUp = 0;
+
+    // Apply stats from adjustments to "Hours Tutored"
+    // We need to know which month the adjustment applies to.
+
+    // CURRENT MONTH STATS
+    const currentMonthStr = String(currentMonth).padStart(2, '0');
+    const currentMonthAdjustments = adjustments
+      .filter(adj => adj.monthApplied === currentMonthStr && adj.academicYear === (currentMonth >= 9 ? currentYear : currentYear - 1))
+      .reduce((sum, adj) => sum + adj.amount, 0);
+
+    hoursTutoredThisMonth += currentMonthAdjustments;
+
+    // YEAR STATS
+    const yearAdjustments = adjustments.reduce((sum, adj) => sum + adj.amount, 0);
+    hoursTutoredThisYear += yearAdjustments;
+
 
     // Only calculate if we're in or past September 2025
     if (currentYear > 2025 || (currentYear === 2025 && currentMonth >= 9)) {
@@ -1089,32 +1280,33 @@ router.get('/student-stats', isAuthenticated, async (req, res) => {
         // Accumulate hours tutored so far (through current month only)
         totalHoursTutoredSoFar += actualHours;
 
-        // Calculate required hours for this month
-        let requiredForMonth;
-        if (month === '09') {
-          // September 2025: exception students have 0 hours required, others have 2 hours
-          requiredForMonth = isExceptionStudent ? 0 : 2;
-        } else {
-          // October onwards: exception students have 1 base hour, others have 2.5 base hours + penalties from previous months (excluding September)
-          requiredForMonth = isExceptionStudent ? 1 : 2.5;
+        // Apply adjustments
+        const monthAdjustments = adjustments
+          .filter(adj => adj.monthApplied === month)
+          .reduce((sum, adj) => sum + adj.amount, 0);
+        actualHours += monthAdjustments;
 
-          // Add 50% penalty for each hour missed in previous months (excluding September)
-          if (totalMissedHours > 0) {
-            let penalty = totalMissedHours * 0.5;
-            // Round down to nearest 0.5 (e.g., 1.25 -> 1.0, 1.75 -> 1.5)
-            penalty = Math.floor(penalty * 2) / 2;
-            requiredForMonth += penalty;
-          }
+        // Calculate required hours for this month
+        const memberType = req.user.memberType || 'New';
+        const studentReqs = settings.memberRequirements[memberType] || settings.memberRequirements['New'];
+
+        let requiredForMonth = studentReqs.baseHours;
+
+        const monthOrder = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
+        const penaltyStartIndex = monthOrder.indexOf(settings.penaltyMonth);
+        const currentMonthIndex = monthOrder.indexOf(month);
+
+        if (totalMissedHours > 0 && penaltyStartIndex !== -1 && currentMonthIndex >= penaltyStartIndex) {
+          let penalty = totalMissedHours * studentReqs.penaltyRate;
+          penalty = Math.floor(penalty * 2) / 2;
+          requiredForMonth += penalty;
         }
 
         totalRequiredHours += requiredForMonth;
 
         // Calculate missed hours for this month to carry forward
         const missedThisMonth = Math.max(0, requiredForMonth - actualHours);
-        // Only add to penalty calculation if not September
-        if (month !== '09') {
-          totalMissedHours += missedThisMonth;
-        }
+        totalMissedHours += missedThisMonth;
       }
 
       // Calculate hours to make up so far (current month deficit)
@@ -1142,30 +1334,30 @@ router.get('/student-stats', isAuthenticated, async (req, res) => {
           continue; // Already processed
         }
 
-        // Calculate required hours for future months
-        let requiredForMonth;
-        if (month === '09') {
-          requiredForMonth = isExceptionStudent ? 0 : 2;
-        } else {
-          requiredForMonth = isExceptionStudent ? 1 : 2.5;
+        // Future month projection
+        const memberType = req.user.memberType || 'New';
+        const studentReqs = settings.memberRequirements[memberType] || settings.memberRequirements['New'];
 
-          if (projectedMissedHours > 0) {
-            let penalty = projectedMissedHours * 0.5;
-            penalty = Math.floor(penalty * 2) / 2;
-            requiredForMonth += penalty;
-          }
+        let requiredForMonth = studentReqs.baseHours;
+
+        const monthOrder = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
+        const penaltyStartIndex = monthOrder.indexOf(settings.penaltyMonth);
+        const currentMonthIndex = monthOrder.indexOf(month);
+
+        if (projectedMissedHours > 0 && penaltyStartIndex !== -1 && currentMonthIndex >= penaltyStartIndex) {
+          let penalty = projectedMissedHours * studentReqs.penaltyRate;
+          penalty = Math.floor(penalty * 2) / 2;
+          requiredForMonth += penalty;
         }
 
         totalRequiredWholeYear += requiredForMonth;
 
         // Assume they won't tutor in future months for projection
         const missedThisMonth = requiredForMonth;
-        if (month !== '09') {
-          projectedMissedHours += missedThisMonth;
-        }
+        projectedMissedHours += missedThisMonth;
       }
 
-      const hoursToMakeUpWholeYear = Math.max(0, totalRequiredWholeYear - totalHoursTutoredSoFar);
+      var hoursToMakeUpWholeYear = Math.max(0, totalRequiredWholeYear - totalHoursTutoredSoFar);
 
       hoursToMakeUp = hoursToMakeUpSoFar; // Keep for backwards compatibility
     }
@@ -1202,15 +1394,12 @@ router.get('/all-students-stats', isAuthenticated, isTeacher, async (req, res) =
     const currentMonth = currentDate.getMonth() + 1; // 1-12
     const currentYear = currentDate.getFullYear();
 
-    // Exception students with different hour requirements
-    const exceptionStudents = [
-      "Conor Moloney", "Ella Prentice", "Emilia Pabian", "Julia Kwiek",
-      "Omar Ramos-Nava", "Sarah Pati", "Winnie Nutkowitz", "Julia Matula",
-      "Evangelia Buzanis", "Tiannie Wang"
-    ];
+    // Get settings
+    const settings = await Settings.getSettings();
+    const adjustments = await HourAdjustment.find({}); // Get all adjustments
 
     // Get all students
-    const students = await User.find({ role: 'student' }).select('firstName lastName');
+    const students = await User.find({ role: 'student' }).select('firstName lastName memberType');
 
     // Get all tutoring sessions from Google Sheets
     const schedule = await googleSheetsService.getTutoringSchedule();
@@ -1218,11 +1407,30 @@ router.get('/all-students-stats', isAuthenticated, isTeacher, async (req, res) =
     // Calculate statistics for each student
     const studentsStats = students.map(student => {
       const userName = `${student.firstName} ${student.lastName}`.trim();
-      const isExceptionStudent = exceptionStudents.includes(userName);
+      const memberType = student.memberType || 'New';
+      const studentReqs = settings.memberRequirements[memberType] || settings.memberRequirements['New'];
+
+      // Filter adjustments for this student
+      const studentAdjustments = adjustments.filter(adj =>
+        (adj.userId && adj.userId.toString() === student._id.toString()) ||
+        adj.userId === null // Apply "All" adjustments
+      );
 
       let hoursTutoredThisMonth = 0;
       let hoursSignedUpThisMonth = 0;
       let hoursTutoredThisYear = 0;
+
+      // Calculate adjustments totals
+      const currentMonthStr = String(currentMonth).padStart(2, '0');
+      const currentMonthAdjustments = studentAdjustments
+        .filter(adj => adj.monthApplied === currentMonthStr && adj.academicYear === (currentMonth >= 9 ? currentYear : currentYear - 1))
+        .reduce((sum, adj) => sum + adj.amount, 0);
+
+      const yearAdjustments = studentAdjustments.reduce((sum, adj) => sum + adj.amount, 0);
+
+      // Apply adjustments to stats
+      hoursTutoredThisMonth += currentMonthAdjustments;
+      hoursTutoredThisYear += yearAdjustments;
 
       schedule.forEach(session => {
         const sessionDate = new Date(session.date);
@@ -1268,7 +1476,8 @@ router.get('/all-students-stats', isAuthenticated, isTeacher, async (req, res) =
       // Calculate hours to make up with new requirements and penalty system
       let hoursToMakeUp = 0;
 
-      // Only calculate if we're in or past September 2025
+      // Only calculate if we're in or past September 2025 (or just generally active)
+      // The logic here should match student-stats
       if (currentYear > 2025 || (currentYear === 2025 && currentMonth >= 9)) {
         // Determine current academic year first
         let academicYear;
@@ -1318,35 +1527,33 @@ router.get('/all-students-stats', isAuthenticated, isTeacher, async (req, res) =
             }
           });
 
+          // Apply adjustments
+          const monthAdjustments = studentAdjustments
+            .filter(adj => adj.monthApplied === month)
+            .reduce((sum, adj) => sum + adj.amount, 0);
+          actualHours += monthAdjustments;
+
           // Accumulate hours tutored so far (through current month only)
           totalHoursTutoredSoFar += actualHours;
 
           // Calculate required hours for this month
-          let requiredForMonth;
-          if (month === '09') {
-            // September 2025: exception students have 0 hours required, others have 2 hours
-            requiredForMonth = isExceptionStudent ? 0 : 2;
-          } else {
-            // October onwards: exception students have 1 base hour, others have 2.5 base hours + penalties from previous months (excluding September)
-            requiredForMonth = isExceptionStudent ? 1 : 2.5;
+          let requiredForMonth = studentReqs.baseHours;
 
-            // Add 50% penalty for each hour missed in previous months (excluding September)
-            if (totalMissedHours > 0) {
-              let penalty = totalMissedHours * 0.5;
-              // Round down to nearest 0.5 (e.g., 1.25 -> 1.0, 1.75 -> 1.5)
-              penalty = Math.floor(penalty * 2) / 2;
-              requiredForMonth += penalty;
-            }
+          const monthOrder = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
+          const penaltyStartIndex = monthOrder.indexOf(settings.penaltyMonth);
+          const currentMonthIndex = monthOrder.indexOf(month);
+
+          if (totalMissedHours > 0 && penaltyStartIndex !== -1 && currentMonthIndex >= penaltyStartIndex) {
+            let penalty = totalMissedHours * studentReqs.penaltyRate;
+            penalty = Math.floor(penalty * 2) / 2;
+            requiredForMonth += penalty;
           }
 
           totalRequiredHours += requiredForMonth;
 
           // Calculate missed hours for this month to carry forward
           const missedThisMonth = Math.max(0, requiredForMonth - actualHours);
-          // Only add to penalty calculation if not September
-          if (month !== '09') {
-            totalMissedHours += missedThisMonth;
-          }
+          totalMissedHours += missedThisMonth;
         }
 
         // Calculate hours to make up so far (current month deficit)
@@ -1374,29 +1581,26 @@ router.get('/all-students-stats', isAuthenticated, isTeacher, async (req, res) =
           }
 
           // Calculate required hours for future months
-          let requiredForMonth;
-          if (month === '09') {
-            requiredForMonth = isExceptionStudent ? 0 : 2;
-          } else {
-            requiredForMonth = isExceptionStudent ? 1 : 2.5;
+          let requiredForMonth = studentReqs.baseHours;
 
-            if (projectedMissedHours > 0) {
-              let penalty = projectedMissedHours * 0.5;
-              penalty = Math.floor(penalty * 2) / 2;
-              requiredForMonth += penalty;
-            }
+          const monthOrder = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
+          const penaltyStartIndex = monthOrder.indexOf(settings.penaltyMonth);
+          const currentMonthIndex = monthOrder.indexOf(month);
+
+          if (projectedMissedHours > 0 && penaltyStartIndex !== -1 && currentMonthIndex >= penaltyStartIndex) {
+            let penalty = projectedMissedHours * studentReqs.penaltyRate;
+            penalty = Math.floor(penalty * 2) / 2;
+            requiredForMonth += penalty;
           }
 
           totalRequiredWholeYear += requiredForMonth;
 
           // Assume they won't tutor in future months for projection
           const missedThisMonth = requiredForMonth;
-          if (month !== '09') {
-            projectedMissedHours += missedThisMonth;
-          }
+          projectedMissedHours += missedThisMonth;
         }
 
-        const hoursToMakeUpWholeYear = Math.max(0, totalRequiredWholeYear - totalHoursTutoredSoFar);
+        var hoursToMakeUpWholeYear = Math.max(0, totalRequiredWholeYear - totalHoursTutoredSoFar);
 
         hoursToMakeUp = hoursToMakeUpSoFar; // Keep for backwards compatibility
       }
@@ -1415,6 +1619,8 @@ router.get('/all-students-stats', isAuthenticated, isTeacher, async (req, res) =
 
     res.json({ students: studentsStats });
 
+
+
   } catch (error) {
     console.error('Error fetching all students stats:', error);
     res.status(500).json({
@@ -1424,5 +1630,107 @@ router.get('/all-students-stats', isAuthenticated, isTeacher, async (req, res) =
   }
 });
 
+import Meeting from '../models/Meeting.js';
+
+// --- MEETING ATTENDANCE ROUTES ---
+
+// Create a new meeting (Teacher only)
+router.post('/meetings', isAuthenticated, isTeacher, async (req, res) => {
+  try {
+    const { title, code, value } = req.body;
+
+    // Check if code already exists and is active
+    const existingMeeting = await Meeting.findOne({ code, isActive: true });
+    if (existingMeeting) {
+      return res.status(400).json({ error: 'A meeting with this code is already active.' });
+    }
+
+    const meeting = new Meeting({
+      title,
+      code,
+      value: value || 1.0
+    });
+
+    await meeting.save();
+    res.json({ success: true, meeting });
+  } catch (error) {
+    console.error('Error creating meeting:', error);
+    res.status(500).json({ error: 'Failed to create meeting' });
+  }
+});
+
+// Get recent meetings (Teacher only)
+router.get('/meetings', isAuthenticated, isTeacher, async (req, res) => {
+  try {
+    const meetings = await Meeting.find()
+      .sort({ date: -1 })
+      .limit(20)
+      .populate('attendees', 'firstName lastName email');
+    res.json(meetings);
+  } catch (error) {
+    console.error('Error fetching meetings:', error);
+    res.status(500).json({ error: 'Failed to fetch meetings' });
+  }
+});
+
+// Toggle meeting status
+router.patch('/meetings/:id/toggle', isAuthenticated, isTeacher, async (req, res) => {
+  try {
+    const meeting = await Meeting.findById(req.params.id);
+    if (!meeting) {
+      return res.status(404).json({ error: 'Meeting not found' });
+    }
+    meeting.isActive = !meeting.isActive;
+    await meeting.save();
+    res.json({ success: true, meeting });
+  } catch (error) {
+    console.error('Error toggling meeting:', error);
+    res.status(500).json({ error: 'Failed to update meeting' });
+  }
+});
+
+
+// Student submits attendance code
+router.post('/meetings/attend', isAuthenticated, async (req, res) => {
+  try {
+    const { code } = req.body;
+    const userId = req.user._id;
+
+    // Find active meeting with code
+    const meeting = await Meeting.findOne({ code, isActive: true });
+
+    if (!meeting) {
+      return res.status(400).json({ success: false, message: 'Invalid or inactive meeting code.' });
+    }
+
+    // Check if already attended
+    if (meeting.attendees.includes(userId)) {
+      return res.status(400).json({ success: false, message: 'You have already checked in for this meeting.' });
+    }
+
+    // Record attendance
+    meeting.attendees.push(userId);
+    await meeting.save();
+
+    // Grant hours via HourAdjustment
+    const adjustment = new HourAdjustment({
+      userId: userId,
+      amount: meeting.value,
+      reason: `Attended Meeting: ${meeting.title}`,
+      monthApplied: String(new Date().getMonth() + 1).padStart(2, '0'), // Current month
+      academicYear: new Date().getMonth() >= 8 ? new Date().getFullYear() : new Date().getFullYear() - 1 // Current academic year logic
+    });
+
+    await adjustment.save();
+
+    res.json({ success: true, message: `Check-in successful! +${meeting.value} hour(s) recorded.` });
+
+  } catch (error) {
+    console.error('Error submitting attendance:', error);
+    res.status(500).json({ success: false, message: 'Failed to process check-in.' });
+  }
+});
+
 export default router;
+
 

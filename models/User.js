@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     trim: true,
     validate: {
-      validator: function(email) {
+      validator: function (email) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
       },
       message: 'Please enter a valid email address'
@@ -33,6 +33,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['student', 'teacher'],
     required: [true, 'Role is required']
+  },
+  memberType: {
+    type: String,
+    enum: ['New', 'Old', 'Officer'],
+    default: 'New'
   },
   firstName: {
     type: String,
@@ -79,9 +84,9 @@ const userSchema = new mongoose.Schema({
 });
 
 // Hash password before saving
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
-  
+
   try {
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
@@ -92,12 +97,12 @@ userSchema.pre('save', async function(next) {
 });
 
 // Compare password method
-userSchema.methods.comparePassword = async function(candidatePassword) {
+userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
 // Generate email verification token
-userSchema.methods.generateEmailVerificationToken = function() {
+userSchema.methods.generateEmailVerificationToken = function () {
   const token = crypto.randomBytes(32).toString('hex');
   this.emailVerificationToken = token;
   this.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
@@ -105,7 +110,7 @@ userSchema.methods.generateEmailVerificationToken = function() {
 };
 
 // Generate password reset token
-userSchema.methods.generatePasswordResetToken = function() {
+userSchema.methods.generatePasswordResetToken = function () {
   const token = crypto.randomBytes(32).toString('hex');
   this.passwordResetToken = token;
   this.passwordResetExpires = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 hour
@@ -113,7 +118,7 @@ userSchema.methods.generatePasswordResetToken = function() {
 };
 
 // Full name virtual
-userSchema.virtual('fullName').get(function() {
+userSchema.virtual('fullName').get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
 

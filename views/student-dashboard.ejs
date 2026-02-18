@@ -126,6 +126,32 @@
                     </div>
                 </div>
             </div>
+            <!-- Meeting Check-in Widget -->
+            <div class="auth-card" style="margin-top: 2rem;">
+                <div class="auth-body">
+                    <div
+                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+                        <h3
+                            style="margin: 0; display: flex; align-items: center; gap: 0.75rem; font-size: 1.25rem; color: #1f2937;">
+                            <div
+                                style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); padding: 0.5rem; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-qrcode" style="color: white; font-size: 1rem;"></i>
+                            </div>
+                            Meeting Check-in
+                        </h3>
+                    </div>
+                    <form id="meetingCheckinForm" style="display: flex; gap: 1rem; align-items: flex-end;">
+                        <div class="auth-input-group" style="flex: 1;">
+                            <label for="checkinCode" class="auth-label">Enter Meeting Code</label>
+                            <input type="text" id="checkinCode" class="auth-input" placeholder="e.g. MATH2025" required>
+                        </div>
+                        <button type="submit" class="auth-button" style="width: auto; margin-bottom: 2px;">
+                            <i class="fas fa-check-circle"></i> Check In
+                        </button>
+                    </form>
+                </div>
+            </div>
+
             <!-- Current Sign-ups Widget -->
             <div class="auth-card" style="margin-top: 2rem;">
                 <div class="auth-body">
@@ -738,6 +764,32 @@
                 // Keep default values if error occurs
             }
         }
+
+        // Meeting Check-in
+        document.getElementById('meetingCheckinForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const code = document.getElementById('checkinCode').value;
+
+            try {
+                const response = await fetch('/api/meetings/attend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(result.message);
+                    document.getElementById('checkinCode').value = '';
+                    loadStudentStats(); // Refresh stats to show new hours
+                } else {
+                    alert(result.message || 'Check-in failed.');
+                }
+            } catch (error) {
+                console.error('Error checking in:', error);
+                alert('An error occurred. Please try again.');
+            }
+        });
 
         // Initialize everything when page loads
         initializeCalendar();
