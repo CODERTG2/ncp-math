@@ -367,6 +367,21 @@ router.post('/hours/adjust', isAuthenticated, isTeacher, async (req, res) => {
     });
 
     await adjustment.save();
+
+    // Log to Google Sheets
+    try {
+      let userForSheet = { firstName: 'All', lastName: 'Students', memberType: 'N/A' };
+      if (userId) {
+        const user = await User.findById(userId);
+        if (user) {
+          userForSheet = user;
+        }
+      }
+      await googleSheetsService.logAdjustment(adjustment, userForSheet);
+    } catch (sheetError) {
+      console.error('Failed to log to sheet:', sheetError);
+    }
+
     res.json({ success: true, adjustment });
   } catch (error) {
     console.error('Error creating hour adjustment:', error);
