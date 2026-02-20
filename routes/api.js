@@ -17,7 +17,7 @@ router.get('/tutoring-schedule', isAuthenticated, async (req, res) => {
     let schedule = [];
 
     // Check if Google Sheets is configured
-    if (process.env.GOOGLE_SHEETS_ID && process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+    if (googleSheetsService.isConfigured()) {
       try {
         // Get schedule from Google Sheets (now includes tutor signups)
         schedule = await googleSheetsService.getTutoringSchedule();
@@ -449,7 +449,7 @@ router.post('/update-session', isAuthenticated, isTeacher, async (req, res) => {
     }
 
     // Check if Google Sheets is configured
-    if (!process.env.GOOGLE_SHEETS_ID || !process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+    if (!googleSheetsService.isConfigured()) {
       console.log('Google Sheets not configured');
       return res.status(500).json({
         success: false,
@@ -647,7 +647,7 @@ router.post('/add-session', isAuthenticated, isTeacher, async (req, res) => {
     }
 
     // Check if Google Sheets is configured
-    if (!process.env.GOOGLE_SHEETS_ID || !process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+    if (!googleSheetsService.isConfigured()) {
       return res.status(500).json({
         success: false,
         message: 'Google Sheets not configured'
@@ -684,7 +684,7 @@ router.post('/delete-session', isAuthenticated, isTeacher, async (req, res) => {
     }
 
     // Check if Google Sheets is configured
-    if (!process.env.GOOGLE_SHEETS_ID || !process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+    if (!googleSheetsService.isConfigured()) {
       return res.status(500).json({
         success: false,
         message: 'Google Sheets not configured'
@@ -909,7 +909,7 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
     let schedule = [];
 
     // Check if Google Sheets is configured
-    if (process.env.GOOGLE_SHEETS_ID && process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+    if (googleSheetsService.isConfigured()) {
       try {
         schedule = await googleSheetsService.getTutoringSchedule();
       } catch (sheetsError) {

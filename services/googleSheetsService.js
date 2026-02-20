@@ -5,21 +5,32 @@ class GoogleSheetsService {
   constructor() {
     this.auth = null;
     this.sheets = null;
-    this.spreadsheetId = process.env.GOOGLE_SHEETS_ID;
+    this.spreadsheetId = process.env.GOOGLE_SHEETS_ID || process.env.SPREADSHEET_ID;
     this.range = 'Sheet1!A:T'; // Updated to include all tutor and check-in columns (A to T)
+  }
+
+  isConfigured() {
+    const hasServiceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY && process.env.GOOGLE_SHEETS_ID;
+    const hasIndividualCreds = process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY && process.env.SPREADSHEET_ID;
+    return Boolean(hasServiceAccountJson || hasIndividualCreds);
   }
 
   async initialize() {
     try {
-      // Check if Google Sheets credentials are available
-      const serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-
-      if (!serviceAccountKey || serviceAccountKey === '{}' || !this.spreadsheetId) {
+      if (!this.isConfigured()) {
         throw new Error('Google Sheets credentials not configured');
       }
 
-      // Initialize Google Sheets API with service account
-      const credentials = JSON.parse(serviceAccountKey);
+      let credentials;
+
+      if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+        credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY);
+      } else {
+        credentials = {
+          client_email: process.env.GOOGLE_CLIENT_EMAIL,
+          private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        };
+      }
 
       this.auth = new google.auth.GoogleAuth({
         credentials,
