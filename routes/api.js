@@ -1457,8 +1457,7 @@ router.get('/all-students-stats', isAuthenticated, isTeacher, async (req, res) =
     // Get all tutoring sessions from Google Sheets
     const schedule = await googleSheetsService.getTutoringSchedule();
 
-    // Calculate statistics for each student
-    const studentsStats = students.map(student => {
+    function calculateStudentStats(student, adjustments, schedule, settings, currentMonth, currentYear) {
       const userName = `${student.firstName} ${student.lastName}`.trim();
       const memberType = student.memberType || 'New';
 
@@ -1670,7 +1669,10 @@ router.get('/all-students-stats', isAuthenticated, isTeacher, async (req, res) =
         hoursToMakeUpSoFar: Math.round(hoursToMakeUp * 10) / 10,
         hoursToMakeUpWholeYear: Math.round(hoursToMakeUpWholeYear * 10) / 10
       };
-    });
+    }
+
+    // Calculate statistics for each student
+    const studentsStats = students.map(student => calculateStudentStats(student, adjustments, schedule, settings, currentMonth, currentYear));
 
     res.json({ students: studentsStats });
 
@@ -1681,6 +1683,57 @@ router.get('/all-students-stats', isAuthenticated, isTeacher, async (req, res) =
     res.status(500).json({
       error: 'Failed to fetch student statistics',
       students: []
+    });
+  }
+});
+
+// Get leaderboard stats (Top 5 / Bottom 5 by hoursToMakeUp)
+router.get('/leaderboard', isAuthenticated, async (req, res) => {
+  try {
+    if (!process.env.GOOGLE_SHEETS_ID || !process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+      return res.json({ top5: [], bottom5: [] });
+    }
+
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1; // 1-12
+    const currentYear = currentDate.getFullYear();
+
+    // Get settings, adjustments, schedule, and all students
+    const settings = await Settings.getSettings();
+    const adjustments = await HourAdjustment.find({});
+    const schedule = await googleSheetsService.getTutoringSchedule();
+    const students = await User.find({ role: 'student' }).select('firstName lastName memberType');
+
+    // Calculate statistics for each student using our helper
+    // We only care about hoursToMakeUp for the leaderboard
+    const studentsStats = students.map(student => {
+      const stats = calculateStudentStats(student, adjustments, schedule, settings, currentMonth, currentYear);
+      return {
+        name: `${stats.firstName} ${stats.lastName}`.trim(),
+        hoursToMakeUp: stats.hoursToMakeUp
+      };
+    });
+
+    // Sort students by highest hours To Make Up (descending)
+    studentsStats.sort((a, b) => b.hoursToMakeUp - a.hoursToMakeUp);
+
+    // Filter out students who don't have any hours to make up, if you only want people who actually owe hours
+    // But typically leaderboard might just show bottom absolute
+
+    // Bottom 5 (Most hours to make up)
+    const bottom5 = studentsStats.slice(0, 5);
+
+    // Top 5 (Least hours to make up - meaning lowest hoursToMakeUp, or even negative if they overperformed, though our logic caps at 0)
+    // We take the last 5 elements and reverse them so the very best student is at index 0.
+    const top5 = studentsStats.slice(-5).reverse();
+
+    res.json({ top5, bottom5 });
+
+  } catch (error) {
+    console.error('Error fetching leaderboard stats:', error);
+    res.status(500).json({
+      error: 'Failed to fetch leaderboard statistics',
+      top5: [], bottom5: []
     });
   }
 });

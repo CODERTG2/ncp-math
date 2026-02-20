@@ -31,16 +31,16 @@
             <div class="nav-menu">
                 <button class="nav-btn" onclick="window.location.href='/resources'">
                     <i class="fas fa-book"></i>
-                    Resources
+                    Study Resources
                 </button>
                 <button class="nav-btn" onclick="window.location.href='/ai'">
                     <i class="fas fa-robot"></i>
-                    AI
+                    AI Assistance
                 </button>
                 <% if (typeof user !=='undefined' && user) { %>
                     <button class="nav-btn" onclick="window.location.href='/dashboard/<%= user.role %>'">
                         <i class="fas fa-tachometer-alt"></i>
-                        Dashboard
+                        Tutoring Dashboard
                     </button>
                     <button class="nav-btn" onclick="window.location.href='/logout'">
                         <i class="fas fa-sign-out-alt"></i>

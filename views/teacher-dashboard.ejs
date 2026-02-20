@@ -68,13 +68,13 @@
             </button>
             <div class="nav-menu">
                 <button class="nav-btn" onclick="window.location.href='/resources'">
-                    <i class="fas fa-book"></i> Resources
+                    <i class="fas fa-book"></i> Study Resources
                 </button>
                 <button class="nav-btn" onclick="window.location.href='/ai'">
-                    <i class="fas fa-robot"></i> AI
+                    <i class="fas fa-robot"></i> AI Assistance
                 </button>
                 <button class="nav-btn active">
-                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                    <i class="fas fa-tachometer-alt"></i> Tutoring Dashboard
                 </button>
                 <button class="nav-btn" onclick="window.location.href='/logout'">
                     <i class="fas fa-sign-out-alt"></i> Logout
@@ -98,6 +98,9 @@
                 </button>
                 <button class="main-tab-btn" onclick="switchMainTab('meetings')" id="main-tab-meetings">
                     <i class="fas fa-users"></i> Meetings Management
+                </button>
+                <button class="main-tab-btn" onclick="switchMainTab('leaderboard')" id="main-tab-leaderboard">
+                    <i class="fas fa-trophy"></i> Leaderboard
                 </button>
             </div>
 
@@ -476,6 +479,72 @@
                 </div>
             </div>
 
+            <!-- TAB 4: LEADERBOARD -->
+            <div id="main-content-leaderboard" class="main-tab-content" style="display: none;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+
+                    <!-- Top 5 Card -->
+                    <div
+                        style="background: var(--bg-primary); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h4 style="font-size: 1.1rem; font-weight: 600; color: #10b981;"><i
+                                    class="fas fa-medal"></i> Top 5: Least Hours Needed</h4>
+                        </div>
+                        <div
+                            style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                                <thead style="background: var(--bg-secondary); position: sticky; top: 0;">
+                                    <tr>
+                                        <th
+                                            style="padding: 0.5rem; text-align: left; border-bottom: 1px solid var(--border-color);">
+                                            Name</th>
+                                        <th
+                                            style="padding: 0.5rem; text-align: right; border-bottom: 1px solid var(--border-color);">
+                                            Deficit Owed</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="leaderboardTop5Body">
+                                    <tr>
+                                        <td colspan="2" style="text-align: center; padding: 1rem;">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Bottom 5 Card -->
+                    <div
+                        style="background: var(--bg-primary); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h4 style="font-size: 1.1rem; font-weight: 600; color: #ef4444;"><i
+                                    class="fas fa-exclamation-triangle"></i> Bottom 5: Most Hours Needed</h4>
+                        </div>
+                        <div
+                            style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                                <thead style="background: var(--bg-secondary); position: sticky; top: 0;">
+                                    <tr>
+                                        <th
+                                            style="padding: 0.5rem; text-align: left; border-bottom: 1px solid var(--border-color);">
+                                            Name</th>
+                                        <th
+                                            style="padding: 0.5rem; text-align: right; border-bottom: 1px solid var(--border-color);">
+                                            Deficit Owed</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="leaderboardBottom5Body">
+                                    <tr>
+                                        <td colspan="2" style="text-align: center; padding: 1rem;">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Session Modals (Kept from Original) -->
             <div id="sessionModal" class="modern-modal" style="display: none;">
                 <div class="modal-backdrop"></div>
@@ -592,6 +661,8 @@
             // Trigger specific loads if needed
             if (tabName === 'tracker') {
                 if (!statsData) loadStudentStatistics();
+            } else if (tabName === 'leaderboard') {
+                loadLeaderboard();
             }
         }
 
@@ -1117,6 +1188,47 @@
                 }
             });
         }
+        // Leaderboard logic
+        async function loadLeaderboard() {
+            try {
+                const response = await fetch('/api/leaderboard');
+                const data = await response.json();
+
+                const top5Body = document.getElementById('leaderboardTop5Body');
+                const bottom5Body = document.getElementById('leaderboardBottom5Body');
+
+                if (data.top5 && data.top5.length > 0) {
+                    top5Body.innerHTML = data.top5.map(student => `
+                        <tr>
+                            <td style="padding: 0.5rem; border-bottom: 1px solid #f1f5f9;">${student.name}</td>
+                            <td style="padding: 0.5rem; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 600; color: #10b981;">
+                                ${student.hoursToMakeUp}
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    top5Body.innerHTML = `<tr><td colspan="2" style="text-align: center; padding: 1rem;">No data available</td></tr>`;
+                }
+
+                if (data.bottom5 && data.bottom5.length > 0) {
+                    bottom5Body.innerHTML = data.bottom5.map(student => `
+                        <tr>
+                            <td style="padding: 0.5rem; border-bottom: 1px solid #f1f5f9;">${student.name}</td>
+                            <td style="padding: 0.5rem; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 600; color: #ef4444;">
+                                ${student.hoursToMakeUp}
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    bottom5Body.innerHTML = `<tr><td colspan="2" style="text-align: center; padding: 1rem;">No data available</td></tr>`;
+                }
+            } catch (error) {
+                console.error('Error loading leaderboard:', error);
+                document.getElementById('leaderboardTop5Body').innerHTML = `<tr><td colspan="2" style="text-align: center; color: red;">Error loading data</td></tr>`;
+                document.getElementById('leaderboardBottom5Body').innerHTML = `<tr><td colspan="2" style="text-align: center; color: red;">Error loading data</td></tr>`;
+            }
+        }
+
     </script>
 </body>
 
