@@ -1,22 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mu Alpha Theta - NCP</title>
     <link rel="stylesheet" href="css/home.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    </script>
 </head>
+
 <body>
     <!-- Navigation Bar -->
     <nav class="navbar" id="navbar">
         <div class="nav-container">
             <div class="nav-logo">
-                <div class="logo-placeholder">
-                    <i class="fas fa-infinity"></i>
-                </div>
+                <img src="/img/logo.png" alt="Mu Alpha Theta Logo" class="nav-logo-img">
                 <span class="nav-title">Mu Alpha Theta</span>
             </div>
             <button class="mobile-menu-btn" onclick="document.querySelector('.nav-menu').classList.toggle('active')">
@@ -31,7 +37,7 @@
                     <i class="fas fa-robot"></i>
                     AI
                 </button>
-                <% if (typeof user !== 'undefined' && user) { %>
+                <% if (typeof user !=='undefined' && user) { %>
                     <button class="nav-btn" onclick="window.location.href='/dashboard/<%= user.role %>'">
                         <i class="fas fa-tachometer-alt"></i>
                         Dashboard
@@ -40,12 +46,12 @@
                         <i class="fas fa-sign-out-alt"></i>
                         Logout
                     </button>
-                <% } else { %>
-                    <button class="nav-btn" onclick="window.location.href='/mat'">
-                        <i class="fas fa-graduation-cap"></i>
-                        MAT Portal
-                    </button>
-                <% } %>
+                    <% } else { %>
+                        <button class="nav-btn" onclick="window.location.href='/mat'">
+                            <i class="fas fa-graduation-cap"></i>
+                            MAT Portal
+                        </button>
+                        <% } %>
             </div>
         </div>
     </nav>
@@ -64,7 +70,8 @@
                 </div>
             </div>
         </div>
-        <div class="scroll-indicator" onclick="document.querySelector('.about-section').scrollIntoView({ behavior: 'smooth' })">
+        <div class="scroll-indicator"
+            onclick="document.querySelector('.about-section').scrollIntoView({ behavior: 'smooth' })">
             <span class="scroll-text">Scroll Down</span>
             <div class="scroll-arrow"></div>
         </div>
@@ -75,7 +82,8 @@
         <section class="about-section">
             <div class="container">
                 <h2>About Us</h2>
-                <p>Mu Alpha Theta is dedicated to advancing mathematical education and fostering a love for mathematics among students. We provide resources, support, and opportunities for mathematical exploration.</p>
+                <p>Mu Alpha Theta is dedicated to advancing mathematical education and fostering a love for mathematics
+                    among students. We provide resources, support, and opportunities for mathematical exploration.</p>
             </div>
         </section>
 
@@ -90,7 +98,8 @@
                         </div>
                         <h3>Follow Us</h3>
                         <p class="contact-placeholder">@ncp.mao</p>
-                        <button class="contact-btn" onclick="window.open('https://www.instagram.com/ncp.mao', '_blank')">
+                        <button class="contact-btn"
+                            onclick="window.open('https://www.instagram.com/ncp.mao', '_blank')">
                             <i class="fab fa-instagram"></i>
                             Follow on Instagram
                         </button>
@@ -110,5 +119,33 @@
             </div>
         </section>
     </main>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle-btn" id="themeToggleBtn" aria-label="Toggle Dark Mode">
+        <i class="fas fa-moon"></i>
+    </button>
+
+    <script>
+        // Theme toggling
+        const themeBtn = document.getElementById('themeToggleBtn');
+        if (themeBtn) {
+            if (localStorage.getItem('theme') === 'dark') {
+                themeBtn.innerHTML = '<i class="fas fa-sun"></i>';
+            }
+            themeBtn.addEventListener('click', () => {
+                const isDark = document.documentElement.hasAttribute('data-theme');
+                if (isDark) {
+                    document.documentElement.removeAttribute('data-theme');
+                    localStorage.setItem('theme', 'light');
+                    themeBtn.innerHTML = '<i class="fas fa-moon"></i>';
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                    themeBtn.innerHTML = '<i class="fas fa-sun"></i>';
+                }
+            });
+        }
+    </script>
 </body>
+
 </html>

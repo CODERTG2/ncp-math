@@ -22,17 +22,17 @@ app.use(express.urlencoded({ extended: true }));
 
 // Session configuration
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'your-secret-key-here',
-    resave: false,
-    saveUninitialized: false,
-    store: MongoStore.create({
-        mongoUrl: process.env.MONGODB_URI
-    }),
-    cookie: {
-        secure: process.env.NODE_ENV === 'production',
-        httpOnly: true,
-        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    }
+  secret: process.env.SESSION_SECRET || 'your-secret-key-here',
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI
+  }),
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  }
 }));
 
 // Static files
@@ -75,7 +75,7 @@ app.get('/mat', (req, res) => {
 
 // Check-in
 app.get("/check-in", attachUser, (req, res) => {
-  res.render("checkin", { 
+  res.render("checkin", {
     title: 'Check-in',
     user: res.locals.user,
     error: req.query.error,
@@ -100,12 +100,7 @@ app.get('/dashboard/teacher', isAuthenticated, hasRole(['teacher']), (req, res) 
   });
 });
 
-app.get('/dashboard/teacher/student-hours', isAuthenticated, hasRole(['teacher']), (req, res) => {
-  res.render('student-hours-tracker', {
-    user: req.user,
-    title: 'Student Hours Tracker'
-  });
-});
+
 
 // Logout route (redirect)
 app.get('/logout', (req, res) => {
