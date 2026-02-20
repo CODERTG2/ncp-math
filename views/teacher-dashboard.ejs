@@ -183,6 +183,26 @@
                                 missed hours start accumulating 50% penalty.</p>
                         </div>
 
+                        <div style="margin-bottom: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                            <h5 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; color: #111827;">
+                                Monthly Requirements</h5>
+                            <div class="auth-input-group" style="margin-bottom: 1rem;">
+                                <label class="auth-label">Target Month to Detail</label>
+                                <select id="settingTargetMonth" class="auth-input" onchange="loadReqForMonth()">
+                                    <option value="09">September</option>
+                                    <option value="10">October</option>
+                                    <option value="11">November</option>
+                                    <option value="12">December</option>
+                                    <option value="01">January</option>
+                                    <option value="02">February</option>
+                                    <option value="03">March</option>
+                                    <option value="04">April</option>
+                                    <option value="05">May</option>
+                                    <option value="06">June</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                             <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 8px;">
                                 <h5 style="font-weight: 600; margin-bottom: 0.5rem; font-size: 0.9rem;">New Members</h5>
@@ -866,22 +886,51 @@
             try {
                 const response = await fetch('/api/settings');
                 globalSettings = await response.json();
+
+                // Initialize default month object if coming from old database 
+                // Settings.js migration should have handled this, but be safe on frontend too
+                if (!globalSettings.memberRequirements['09']) {
+                    const oldReq = globalSettings.memberRequirements;
+                    globalSettings.memberRequirements = {};
+                    const months = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
+                    months.forEach(m => {
+                        globalSettings.memberRequirements[m] = {
+                            New: oldReq.New || { baseHours: 2.5, penaltyRate: 0.5 },
+                            Old: oldReq.Old || { baseHours: 1.0, penaltyRate: 0.5 },
+                            Officer: oldReq.Officer || { baseHours: 0, penaltyRate: 0 }
+                        };
+                    });
+                }
+
                 document.getElementById('settingPenaltyMonth').value = globalSettings.penaltyMonth;
-                document.getElementById('reqNewBase').value = globalSettings.memberRequirements.New.baseHours;
-                document.getElementById('reqNewPenalty').value = globalSettings.memberRequirements.New.penaltyRate;
-                document.getElementById('reqOldBase').value = globalSettings.memberRequirements.Old.baseHours;
-                document.getElementById('reqOldPenalty').value = globalSettings.memberRequirements.Old.penaltyRate;
+                loadReqForMonth(); // load settings for currently selected month in standard dropdown
             } catch (error) { console.error(error); }
         }
 
+        function loadReqForMonth() {
+            const month = document.getElementById('settingTargetMonth').value;
+            const reqs = globalSettings.memberRequirements[month];
+            if (reqs) {
+                document.getElementById('reqNewBase').value = reqs.New.baseHours;
+                document.getElementById('reqNewPenalty').value = reqs.New.penaltyRate;
+                document.getElementById('reqOldBase').value = reqs.Old.baseHours;
+                document.getElementById('reqOldPenalty').value = reqs.Old.penaltyRate;
+            }
+        }
+
         async function saveGeneralSettings() {
+            const targetMonth = document.getElementById('settingTargetMonth').value;
+
+            // Update the global object with the new input values for the selected month
+            globalSettings.memberRequirements[targetMonth] = {
+                New: { baseHours: parseFloat(document.getElementById('reqNewBase').value), penaltyRate: parseFloat(document.getElementById('reqNewPenalty').value) },
+                Old: { baseHours: parseFloat(document.getElementById('reqOldBase').value), penaltyRate: parseFloat(document.getElementById('reqOldPenalty').value) },
+                Officer: globalSettings.memberRequirements[targetMonth]?.Officer || { baseHours: 0, penaltyRate: 0 }
+            };
+
             const updates = {
                 penaltyMonth: document.getElementById('settingPenaltyMonth').value,
-                memberRequirements: {
-                    New: { baseHours: parseFloat(document.getElementById('reqNewBase').value), penaltyRate: parseFloat(document.getElementById('reqNewPenalty').value) },
-                    Old: { baseHours: parseFloat(document.getElementById('reqOldBase').value), penaltyRate: parseFloat(document.getElementById('reqOldPenalty').value) },
-                    Officer: globalSettings.memberRequirements.Officer
-                }
+                memberRequirements: globalSettings.memberRequirements // Send the whole mapped object
             };
             try {
                 const response = await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) });

@@ -5,24 +5,28 @@ const settingsSchema = new mongoose.Schema({
     type: String,
     default: '01', // January by default
     validate: {
-      validator: function(v) {
+      validator: function (v) {
         return /^(0[1-9]|1[0-2])$/.test(v);
       },
       message: props => `${props.value} is not a valid month (01-12)!`
     }
   },
   memberRequirements: {
-    New: {
-      baseHours: { type: Number, default: 2.5 },
-      penaltyRate: { type: Number, default: 0.5 }
-    },
-    Old: {
-      baseHours: { type: Number, default: 1.0 },
-      penaltyRate: { type: Number, default: 0.5 }
-    },
-    Officer: {
-        baseHours: { type: Number, default: 0 },
-        penaltyRate: { type: Number, default: 0 }
+    type: Object,
+    default: () => {
+      const defaultReqs = {
+        New: { baseHours: 2.5, penaltyRate: 0.5 },
+        Old: { baseHours: 1.0, penaltyRate: 0.5 },
+        Officer: { baseHours: 0, penaltyRate: 0 }
+      };
+
+      const months = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
+      const reqs = {};
+      months.forEach(m => {
+        // Just as an example, maybe Sept requires less by default, but keeping it standard for now.
+        reqs[m] = JSON.parse(JSON.stringify(defaultReqs));
+      });
+      return reqs;
     }
   },
   sessionDefaults: {
@@ -47,9 +51,30 @@ const settingsSchema = new mongoose.Schema({
 });
 
 // Ensure only one settings document exists
-settingsSchema.statics.getSettings = async function() {
+settingsSchema.statics.getSettings = async function () {
   const settings = await this.findOne();
-  if (settings) return settings;
+  if (settings) {
+    // Check if memberRequirements is in the old format (missing the '09' key)
+    if (settings.memberRequirements && !settings.memberRequirements['09']) {
+      const oldReqs = settings.memberRequirements;
+      const months = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
+      const newReqs = {};
+      months.forEach(m => {
+        newReqs[m] = {
+          New: oldReqs.New || { baseHours: 2.5, penaltyRate: 0.5 },
+          Old: oldReqs.Old || { baseHours: 1.0, penaltyRate: 0.5 },
+          Officer: oldReqs.Officer || { baseHours: 0, penaltyRate: 0 }
+        };
+      });
+
+      settings.memberRequirements = newReqs;
+
+      // Mark as modified since it's a mixed type / object change
+      settings.markModified('memberRequirements');
+      await settings.save();
+    }
+    return settings;
+  }
   return await this.create({});
 };
 

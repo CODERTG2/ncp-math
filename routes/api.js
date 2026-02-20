@@ -931,7 +931,6 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
     const studentHoursData = students.map(student => {
       const studentName = `${student.firstName} ${student.lastName}`;
       const memberType = student.memberType || 'New';
-      const studentReqs = settings.memberRequirements[memberType] || settings.memberRequirements['New'];
 
       // Filter adjustments for this student
       const studentAdjustments = adjustments.filter(adj =>
@@ -995,6 +994,14 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
       let cumulativeMissedHours = 0;
 
       for (const month of academicMonths) {
+
+        // Fetch month's specific requirements or fall back to a generic default
+        const monthReqs = settings.memberRequirements[month] || {
+          New: { baseHours: 2.5, penaltyRate: 0.5 },
+          Old: { baseHours: 1.0, penaltyRate: 0.5 },
+          Officer: { baseHours: 0, penaltyRate: 0 }
+        };
+        const studentReqs = monthReqs[memberType] || monthReqs['New'];
 
         let requiredForMonth = studentReqs.baseHours;
         // September typically has lower/different requirements or no penalty start yet?
@@ -1066,9 +1073,7 @@ async function getStudentHoursFromDatabase(students, res) {
 
     // Process the data to calculate monthly hours with new requirements
     const studentHoursData = students.map(student => {
-      const studentName = `${student.firstName} ${student.lastName}`;
       const memberType = student.memberType || 'New';
-      const studentReqs = settings.memberRequirements[memberType] || settings.memberRequirements['New'];
 
       const studentCheckIns = checkIns.filter(checkIn =>
         checkIn.userId && checkIn.userId._id.toString() === student._id.toString()
@@ -1324,7 +1329,13 @@ router.get('/student-stats', isAuthenticated, async (req, res) => {
 
         // Calculate required hours for this month
         const memberType = req.user.memberType || 'New';
-        const studentReqs = settings.memberRequirements[memberType] || settings.memberRequirements['New'];
+
+        const monthReqs = settings.memberRequirements[month] || {
+          New: { baseHours: 2.5, penaltyRate: 0.5 },
+          Old: { baseHours: 1.0, penaltyRate: 0.5 },
+          Officer: { baseHours: 0, penaltyRate: 0 }
+        };
+        const studentReqs = monthReqs[memberType] || monthReqs['New'];
 
         let requiredForMonth = studentReqs.baseHours;
 
@@ -1372,7 +1383,13 @@ router.get('/student-stats', isAuthenticated, async (req, res) => {
 
         // Future month projection
         const memberType = req.user.memberType || 'New';
-        const studentReqs = settings.memberRequirements[memberType] || settings.memberRequirements['New'];
+
+        const monthReqs = settings.memberRequirements[month] || {
+          New: { baseHours: 2.5, penaltyRate: 0.5 },
+          Old: { baseHours: 1.0, penaltyRate: 0.5 },
+          Officer: { baseHours: 0, penaltyRate: 0 }
+        };
+        const studentReqs = monthReqs[memberType] || monthReqs['New'];
 
         let requiredForMonth = studentReqs.baseHours;
 
@@ -1444,7 +1461,6 @@ router.get('/all-students-stats', isAuthenticated, isTeacher, async (req, res) =
     const studentsStats = students.map(student => {
       const userName = `${student.firstName} ${student.lastName}`.trim();
       const memberType = student.memberType || 'New';
-      const studentReqs = settings.memberRequirements[memberType] || settings.memberRequirements['New'];
 
       // Filter adjustments for this student
       const studentAdjustments = adjustments.filter(adj =>
