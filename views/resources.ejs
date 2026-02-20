@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resources - Mu Alpha Theta</title>
+    <link rel="stylesheet" href="css/home.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    </script>
+    <style>
+        .coming-soon-container {
+            min-height: calc(100vh - 72px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: var(--space-xl);
+            margin-top: 72px;
+        }
+
+        .coming-soon-content h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: var(--space-md);
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .coming-soon-content i {
+            font-size: 5rem;
+            color: var(--accent-color);
+            margin-bottom: var(--space-lg);
+            opacity: 0.8;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+
+            100% {
+                transform: translateY(0px);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <img src="/img/logo.png" alt="Mu Alpha Theta Logo" class="nav-logo-img">
+                <span class="nav-title">Mu Alpha Theta</span>
+            </div>
+            <button class="mobile-menu-btn" onclick="document.querySelector('.nav-menu').classList.toggle('active')">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="nav-menu">
+                <button class="nav-btn active" id="resourcesBtn" onclick="window.location.href='/resources'">
+                    <i class="fas fa-book"></i>
+                    Resources
+                </button>
+                <button class="nav-btn" id="aiBtn" onclick="window.location.href='/ai'">
+                    <i class="fas fa-robot"></i>
+                    AI
+                </button>
+                <% if (typeof user !=='undefined' && user) { %>
+                    <button class="nav-btn" onclick="window.location.href='/dashboard/<%= user.role %>'">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Dashboard
+                    </button>
+                    <button class="nav-btn" onclick="window.location.href='/logout'">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </button>
+                    <% } else { %>
+                        <button class="nav-btn" onclick="window.location.href='/mat'">
+                            <i class="fas fa-graduation-cap"></i>
+                            MAT Portal
+                        </button>
+                        <% } %>
+            </div>
+        </div>
+    </nav>
+
+    <main class="coming-soon-container">
+        <div class="coming-soon-content">
+            <i class="fas fa-video"></i>
+            <h1>Videos? Coming Soon!</h1>
+            <p style="color: var(--text-secondary); font-size: 1.25rem;">We are working on bringing you awesome video
+                resources. Stay tuned.</p>
+        </div>
+    </main>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle-btn" id="themeToggleBtn" aria-label="Toggle Dark Mode">
+        <i class="fas fa-moon"></i>
+    </button>
+
+    <script>
+        // Theme toggling
+        const themeBtn = document.getElementById('themeToggleBtn');
+        if (themeBtn) {
+            if (localStorage.getItem('theme') === 'dark') {
+                themeBtn.innerHTML = '<i class="fas fa-sun"></i>';
+            }
+            themeBtn.addEventListener('click', () => {
+                const isDark = document.documentElement.hasAttribute('data-theme');
+                if (isDark) {
+                    document.documentElement.removeAttribute('data-theme');
+                    localStorage.setItem('theme', 'light');
+                    themeBtn.innerHTML = '<i class="fas fa-moon"></i>';
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                    themeBtn.innerHTML = '<i class="fas fa-sun"></i>';
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

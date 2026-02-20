@@ -57,11 +57,11 @@ app.get('/', (req, res) => {
 });
 
 app.get('/resources', (req, res) => {
-  res.json({ message: "Coming soon!" });
+  res.render("resources");
 });
 
 app.get('/ai', (req, res) => {
-  res.json({ message: "Coming soon!" });
+  res.render("ai");
 });
 
 // MAT Portal (Login/Register page)
