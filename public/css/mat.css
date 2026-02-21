@@ -861,6 +861,8 @@
     /* Remove margin for alignment */
     border-radius: 8px;
     /* Reduce border radius since no gap */
+    touch-action: pan-x pan-y;
+    /* Ensure scrolling works on touch devices */
   }
 
   .day-number {
@@ -1205,7 +1207,10 @@
   border-radius: 16px;
   margin: 2px;
   border: 2px solid transparent;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  touch-action: pan-y;
+  /* allow vertical scrolling to pass through */
 }
 
 .calendar-day::before {

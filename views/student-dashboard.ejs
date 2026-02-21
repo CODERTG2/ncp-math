@@ -56,10 +56,7 @@
             <div class="modern-calendar-container">
                 <!-- Calendar Header -->
                 <div class="calendar-header-section">
-                    <div class="calendar-title-area">
-                        <div class="title-icon">
-                            <i class="fas fa-calendar-check"></i>
-                        </div>
+                    <div class="calendar-title-area" style="margin-left: 0;">
                         <div class="title-content">
                             <h1 class="main-title">Tutoring Calendar</h1>
                             <p class="subtitle">Book your math tutoring sessions</p>
@@ -289,7 +286,7 @@
                             <div
                                 style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                                 <h4 style="font-size: 1.1rem; font-weight: 600; color: #10b981;"><i
-                                        class="fas fa-medal"></i> Top 5: Least Hours Needed</h4>
+                                        class="fas fa-medal"></i> Top 5: Least Hours to Make Up</h4>
                             </div>
                             <div
                                 style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-primary);">
@@ -319,7 +316,7 @@
                             <div
                                 style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                                 <h4 style="font-size: 1.1rem; font-weight: 600; color: #ef4444;"><i
-                                        class="fas fa-exclamation-triangle"></i> Bottom 5: Most Hours Needed</h4>
+                                        class="fas fa-exclamation-triangle"></i> Bottom 5: Most Hours to Make Up</h4>
                             </div>
                             <div
                                 style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-primary);">
@@ -433,9 +430,20 @@
                     dayElement.classList.add('today');
                 }
 
+                let sessionsHtml = '';
+                if (sessionsForDay.length > 0) {
+                    sessionsHtml = '<div style="margin-top: 4px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; max-height: 80px;">';
+                    sessionsForDay.forEach(s => {
+                        sessionsHtml += `<div style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; padding: 4px; font-size: 0.75rem; line-height: 1.2; text-align: left;">`;
+                        sessionsHtml += `<strong>${s.time}</strong>`;
+                        sessionsHtml += `</div>`;
+                    });
+                    sessionsHtml += '</div>';
+                }
+
                 dayElement.innerHTML = `
                     <div class="day-number">${day}</div>
-                    ${sessionsForDay.length > 0 ? `<div class="session-indicator">${sessionsForDay.length} session${sessionsForDay.length > 1 ? 's' : ''}</div>` : ''}
+                    ${sessionsHtml}
                 `;
 
                 if (sessionsForDay.length > 0) {
