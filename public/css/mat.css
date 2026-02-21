@@ -1207,10 +1207,8 @@
   border-radius: 16px;
   margin: 2px;
   border: 2px solid transparent;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
   touch-action: pan-y;
-  /* allow vertical scrolling to pass through */
 }
 
 .calendar-day::before {
@@ -1224,6 +1222,7 @@
   opacity: 0;
   transition: opacity 0.3s ease;
   border-radius: 14px;
+  pointer-events: none;
 }
 
 .calendar-day:hover::before {
@@ -1258,6 +1257,7 @@
   border-radius: 18px;
   z-index: -1;
   animation: pulse-glow 2s ease-in-out infinite;
+  pointer-events: none;
 }
 
 @keyframes pulse-glow {
