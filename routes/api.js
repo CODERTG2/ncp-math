@@ -1388,6 +1388,50 @@ function calculateStudentStats(student, adjustments, schedule, settings, current
   };
 }
 
+// Get monthly requirements for the student's member type
+router.get('/monthly-requirements', isAuthenticated, async (req, res) => {
+  try {
+    const settings = await Settings.getSettings();
+    const memberType = req.user.memberType || 'New';
+
+    // We want to return the penaltyMonth and an array of objects for Sept-June
+    const academicMonths = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
+    const monthNames = {
+      '09': 'September', '10': 'October', '11': 'November', '12': 'December',
+      '01': 'January', '02': 'February', '03': 'March', '04': 'April',
+      '05': 'May', '06': 'June'
+    };
+
+    const requirements = academicMonths.map(month => {
+      const monthReqs = settings.memberRequirements[month] || {
+        New: { baseHours: 2.5, penaltyRate: 0.5 },
+        Old: { baseHours: 1.0, penaltyRate: 0.5 },
+        Officer: { baseHours: 0, penaltyRate: 0 }
+      };
+
+      const studentReqs = monthReqs[memberType] || monthReqs['New'];
+
+      return {
+        monthCode: month,
+        monthName: monthNames[month],
+        baseHours: studentReqs.baseHours,
+        penaltyRate: studentReqs.penaltyRate
+      };
+    });
+
+    res.json({
+      success: true,
+      memberType: memberType,
+      penaltyMonth: settings.penaltyMonth,
+      requirements: requirements
+    });
+
+  } catch (error) {
+    console.error('Error fetching monthly requirements:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch monthly requirements' });
+  }
+});
+
 // Get student stats for dashboard
 router.get('/student-stats', isAuthenticated, async (req, res) => {
   try {

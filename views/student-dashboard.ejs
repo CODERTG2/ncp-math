@@ -263,6 +263,33 @@
                     </div>
                 </div>
             </div>
+            <!-- Monthly Requirements & Penalties Calendar -->
+            <div class="auth-card" style="margin-top: 2rem;">
+                <div class="auth-body">
+                    <div
+                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
+                        <h3
+                            style="margin: 0; display: flex; align-items: center; gap: 0.75rem; font-size: 1.25rem; color: #1f2937;">
+                            <div
+                                style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 0.5rem; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-calendar-alt" style="color: white; font-size: 1rem;"></i>
+                            </div>
+                            My Monthly Requirements & Penalties
+                        </h3>
+                    </div>
+
+                    <div id="monthlyRequirementsLoading" class="modern-loading"
+                        style="text-align: center; padding: 2rem;">
+                        <div class="loading-spinner"></div>
+                        <span>Loading your monthly requirements...</span>
+                    </div>
+
+                    <div id="monthlyRequirementsContainer"
+                        style="display: none; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem;">
+                        <!-- Month cards injected here -->
+                    </div>
+                </div>
+            </div>
 
             <!-- Leaderboard -->
             <div class="auth-card" style="margin-top: 2rem;">
@@ -965,9 +992,50 @@
             }
         }
 
+        // Load monthly requirements
+        async function loadMonthlyRequirements() {
+            const container = document.getElementById('monthlyRequirementsContainer');
+            const loading = document.getElementById('monthlyRequirementsLoading');
+
+            try {
+                const response = await fetch('/api/monthly-requirements');
+                const data = await response.json();
+
+                if (data.success && data.requirements) {
+                    loading.style.display = 'none';
+                    container.style.display = 'grid';
+
+                    const monthOrder = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
+                    const penaltyStartIndex = monthOrder.indexOf(data.penaltyMonth);
+
+                    container.innerHTML = data.requirements.map(req => {
+                        const currentMonthIndex = monthOrder.indexOf(req.monthCode);
+                        const isPenaltyActive = penaltyStartIndex !== -1 && currentMonthIndex >= penaltyStartIndex;
+
+                        return `
+                            <div style="background: var(--bg-secondary); border: 1px solid ${isPenaltyActive ? '#fca5a5' : 'var(--border-color)'}; border-radius: 8px; padding: 1rem; text-align: center; position: relative; overflow: hidden;">
+                                ${isPenaltyActive ? '<div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: #ef4444;"></div>' : ''}
+                                <h4 style="margin: 0 0 0.5rem 0; color: var(--text-primary); font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">${req.monthName}</h4>
+                                <div style="font-size: 1.5rem; font-weight: bold; color: var(--text-primary); margin: 0.5rem 0;">
+                                    ${req.baseHours} <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-secondary);">hrs</span>
+                                </div>
+                                <div style="font-size: 0.85rem; color: ${isPenaltyActive ? '#ef4444' : 'var(--text-secondary)'}; background: var(--bg-primary); padding: 0.25rem; border-radius: 4px; margin-top: 0.5rem;">
+                                    ${isPenaltyActive ? '<i class="fas fa-exclamation-triangle"></i> ' : ''}Penalty: ${req.penaltyRate}x
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            } catch (error) {
+                console.error('Error loading monthly requirements:', error);
+                loading.innerHTML = '<span style="color: #ef4444;">Failed to load requirements</span>';
+            }
+        }
+
         // Initialize everything when page loads
         initializeCalendar();
         loadStudentStats();
+        loadMonthlyRequirements();
     </script>
 </body>
 
