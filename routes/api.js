@@ -324,7 +324,7 @@ router.post('/members/update-type', isAuthenticated, isTeacher, async (req, res)
       return res.status(400).json({ error: 'Invalid updates format' });
     }
 
-    const allowedTypes = ['New', 'Old', 'Officer'];
+    const allowedTypes = ['New', 'Old', 'FreshMentors', 'Officer'];
     for (const update of updates) {
       if (!allowedTypes.includes(update.memberType)) {
         return res.status(400).json({ error: `Invalid member type: ${update.memberType}. Allowed: ${allowedTypes.join(', ')}` });

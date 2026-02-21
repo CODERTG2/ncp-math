@@ -936,7 +936,14 @@
             const penaltyStartIndex = monthOrder.indexOf(globalSettings.penaltyMonth);
 
             container.innerHTML = monthOrder.map((month, index) => {
-                const reqs = globalSettings.memberRequirements[month] || { New: { baseHours: 2.5, penaltyRate: 0.5 }, Old: { baseHours: 1.0, penaltyRate: 0.5 } };
+                const reqs = globalSettings.memberRequirements[month] || {
+                    New: { baseHours: 2.5, penaltyRate: 0.5 },
+                    Old: { baseHours: 1.0, penaltyRate: 0.5 },
+                    FreshMentors: { baseHours: 1.0, penaltyRate: 0.5 }
+                };
+                // Fallback for missing FreshMentors in existing records
+                if (!reqs.FreshMentors) reqs.FreshMentors = { baseHours: 1.0, penaltyRate: 0.5 };
+
                 const isPenaltyActive = penaltyStartIndex !== -1 && index >= penaltyStartIndex;
 
                 return `
@@ -980,6 +987,21 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- FreshMentors Section -->
+                            <div style="background: var(--bg-primary); padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-color);">
+                                <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.25rem;">FRESHMENTORS</div>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <div style="flex: 1;">
+                                        <label style="font-size: 0.7rem; color: var(--text-secondary); display: block;">Base</label>
+                                        <input type="number" class="auth-input req-fresh-base" value="${reqs.FreshMentors.baseHours}" step="0.5" style="padding: 0.25rem; font-size: 0.9rem; width: 100%;">
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <label style="font-size: 0.7rem; color: var(--text-secondary); display: block;">Penalty</label>
+                                        <input type="number" class="auth-input req-fresh-penalty" value="${reqs.FreshMentors.penaltyRate}" step="0.1" style="padding: 0.25rem; font-size: 0.9rem; width: 100%;">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -995,10 +1017,13 @@
                 const newPenalty = parseFloat(card.querySelector('.req-new-penalty').value) || 0;
                 const oldBase = parseFloat(card.querySelector('.req-old-base').value) || 0;
                 const oldPenalty = parseFloat(card.querySelector('.req-old-penalty').value) || 0;
+                const freshBase = parseFloat(card.querySelector('.req-fresh-base').value) || 0;
+                const freshPenalty = parseFloat(card.querySelector('.req-fresh-penalty').value) || 0;
 
                 globalSettings.memberRequirements[month] = {
                     New: { baseHours: newBase, penaltyRate: newPenalty },
                     Old: { baseHours: oldBase, penaltyRate: oldPenalty },
+                    FreshMentors: { baseHours: freshBase, penaltyRate: freshPenalty },
                     Officer: globalSettings.memberRequirements[month]?.Officer || { baseHours: 0, penaltyRate: 0 }
                 };
             });
@@ -1028,13 +1053,28 @@
         }
 
         function renderMembersTable(students) {
-            document.getElementById('membersTableBody').innerHTML = students.map(s => `
+            document.getElementById('membersTableBody').innerHTML = students.map(s => {
+                const mt = s.memberType || 'New';
+                let bgStyle, copyStyle;
+                if (mt === 'Old') {
+                    bgStyle = 'background: #dbeafe; color: #1e40af;';
+                } else if (mt === 'FreshMentors') {
+                    bgStyle = 'background: #ede9fe; color: #4c1d95;';
+                } else {
+                    bgStyle = 'background: #d1fae5; color: #065f46;'; // New
+                }
+
+                const cycleMap = { 'New': 'Old', 'Old': 'FreshMentors', 'FreshMentors': 'New' };
+                const nextType = cycleMap[mt] || 'New';
+
+                return `
                 <tr style="border-bottom: 1px solid #f3f4f6;">
                     <td style="padding: 0.5rem; white-space:nowrap">${s.firstName} ${s.lastName} <br><span style="font-size:0.75rem; color:#6b7280">${s.email}</span></td>
-                    <td style="padding: 0.5rem;"><span style="padding: 0.25rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; ${s.memberType === 'Old' ? 'background: #dbeafe; color: #1e40af;' : 'background: #d1fae5; color: #065f46;'}">${s.memberType || 'New'}</span></td>
-                    <td style="padding: 0.5rem; text-align: right;"><button onclick="toggleMemberType('${s._id}', '${s.memberType || 'New'}')" style="padding: 0.25rem 0.5rem; border: 1px solid #e5e7eb; background: white; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">Switch to ${s.memberType === 'Old' ? 'New' : 'Old'}</button></td>
+                    <td style="padding: 0.5rem;"><span style="padding: 0.25rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; ${bgStyle}">${mt}</span></td>
+                    <td style="padding: 0.5rem; text-align: right;"><button onclick="toggleMemberType('${s._id}', '${mt}')" style="padding: 0.25rem 0.5rem; border: 1px solid #e5e7eb; background: white; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">Switch to ${nextType}</button></td>
                 </tr>
-            `).join('');
+                `;
+            }).join('');
         }
 
         document.getElementById('memberSearch').addEventListener('input', (e) => {
@@ -1043,9 +1083,10 @@
         });
 
         async function toggleMemberType(userId, currentType) {
-            const newType = currentType === 'Old' ? 'New' : 'Old';
+            const cycleMap = { 'New': 'Old', 'Old': 'FreshMentors', 'FreshMentors': 'New' };
+            const nextType = cycleMap[currentType || 'New'] || 'New';
             try {
-                const response = await fetch('/api/members/update-type', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ updates: [{ userId, memberType: newType }] }) });
+                const response = await fetch('/api/members/update-type', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ updates: [{ userId, memberType: nextType }] }) });
                 if ((await response.json()).success) { loadStudentsList(); await loadStudentHours(); }
             } catch (error) { console.error(error); }
         }
