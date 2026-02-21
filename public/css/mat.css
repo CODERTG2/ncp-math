@@ -1579,6 +1579,8 @@
   transition: var(--transition-smooth);
   position: relative;
   overflow: hidden;
+  box-sizing: border-box;
+  /* Ensures width calculations include padding */
 }
 
 /* Removed card gradients and hover box-shadow effects */
@@ -1725,6 +1727,8 @@
 
 .signup-btn {
   width: 100%;
+  box-sizing: border-box;
+  /* Prevent padding from blowing out 100% width on mobile grids */
   padding: 1.25rem 2rem;
   border: none;
   border-radius: 20px;
@@ -2099,10 +2103,12 @@
 
   .session-card {
     padding: 1rem;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .modal-body-modern {
-    padding: 0.875rem 1.25rem 1.25rem 1.25rem;
+    padding: 0.5rem 0.75rem 0.75rem 0.75rem;
   }
 }
 
@@ -2700,5 +2706,166 @@
   .main-tab-btn {
     padding: 0.75rem 1rem;
     font-size: 0.95rem;
+  }
+}
+
+/* =========================================
+   RESPONSIVE LAYOUT UTILITIES 
+   ========================================= */
+
+/* Default 2-column grid, drops to 1 col on mobile */
+.grid-cols-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+@media (max-width: 768px) {
+  .grid-cols-2 {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+/* Complex Forms Mobile Responsiveness */
+.create-meeting-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr 1fr 1.5fr auto;
+  gap: 1rem;
+  align-items: end;
+}
+
+@media (max-width: 1024px) {
+  .create-meeting-form-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .create-meeting-form-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    align-items: stretch;
+  }
+}
+
+.manual-adj-form-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 1rem;
+  align-items: end;
+  background: var(--bg-secondary);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2.5rem;
+}
+
+@media (max-width: 768px) {
+  .manual-adj-form-grid {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    padding: 1rem;
+  }
+}
+
+.flex-wrap-form {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  /* Allows children to wrap to next line if squeezed */
+}
+
+/* =========================================
+   MOBILE UI V3 HOTFIXES
+   ========================================= */
+
+/* Fix 1: Universal box-sizing for Modals & Cards to stop width: 100% overflow */
+.modern-modal-content,
+.modern-modal-content *,
+.session-card,
+.session-card * {
+  box-sizing: border-box !important;
+}
+
+/* Fix 2: Calendar Weekdays Alignment (Synchronize grid tracks entirely) */
+.calendar-weekdays,
+.calendar-days {
+  padding: 0 0.5rem !important;
+  gap: 0 !important;
+  grid-template-columns: repeat(7, minmax(160px, 1fr)) !important;
+  width: 100% !important;
+  min-width: 1120px !important;
+  display: grid !important;
+  margin: 0 !important;
+  border: none !important;
+}
+
+/* Make sure the day cells and weekday headers don't have invisible margins expanding the track visually */
+.calendar-day,
+.weekday {
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 768px) {
+
+  /* Fix 3: Month Nav Buttons Overflow on Mobile */
+  .modern-calendar-nav {
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    padding: 0 0.5rem !important;
+  }
+
+  .month-display {
+    min-width: 0 !important;
+    flex-shrink: 1 !important;
+    max-width: 100% !important;
+  }
+
+  /* Fix 4: Time Icon Misaligned (Prevent vertical stack of header icon & title) */
+  .modal-header-modern {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
+    padding: 1.5rem !important;
+    gap: 1rem !important;
+  }
+
+  .modal-title-section {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 1rem !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  /* Force the clock icon to stay exactly the right size and row-aligned */
+  .modal-icon {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  .modal-title-text {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Additional safety: let the button shrink if needed */
+  .signup-btn {
+    padding: 1rem 1.5rem !important;
+    font-size: 1rem !important;
   }
 }

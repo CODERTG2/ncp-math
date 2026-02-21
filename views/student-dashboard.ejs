@@ -142,8 +142,8 @@
                             Meeting Check-in
                         </h3>
                     </div>
-                    <form id="meetingCheckinForm" style="display: flex; gap: 1rem; align-items: flex-end;">
-                        <div class="auth-input-group" style="flex: 1;">
+                    <form id="meetingCheckinForm" class="flex-wrap-form">
+                        <div class="auth-input-group" style="flex: 1; min-width: 250px;">
                             <label for="checkinCode" class="auth-label">Enter Meeting Code</label>
                             <input type="text" id="checkinCode" class="auth-input" placeholder="e.g. MATH2025" required>
                         </div>
@@ -306,7 +306,7 @@
                         </h3>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                    <div class="grid-cols-2">
                         <!-- Top 5 Card -->
                         <div
                             style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color);">

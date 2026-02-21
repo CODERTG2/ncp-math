@@ -25,6 +25,12 @@
             border-top: 1px solid #e5e7eb;
         }
 
+        @media (max-width: 768px) {
+            .meeting-attendees-box {
+                grid-template-columns: 1fr;
+            }
+        }
+
         .attended-list,
         .missed-list {
             background: #f8fafc;
@@ -229,8 +235,7 @@
                         Add/Remove
                         Hours Adjustment</h4>
 
-                    <form id="hourAdjustmentForm"
-                        style="display: grid; grid-template-columns: 1fr 2fr 1fr 1fr 1.5fr auto; gap: 1rem; align-items: end;">
+                    <form id="hourAdjustmentForm" class="create-meeting-form-grid">
                         <div class="auth-input-group" style="margin-bottom: 0;">
                             <label class="auth-label">Target</label>
                             <select id="adjTarget" class="auth-input" onchange="toggleAdjUserSelect()">
@@ -389,8 +394,7 @@
                                 class="fas fa-users-class"></i> Create New Meeting</h4>
                     </div>
 
-                    <form id="createMeetingForm"
-                        style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 1rem; align-items: end; background: var(--bg-secondary); padding: 1.5rem; border-radius: 8px; margin-bottom: 2.5rem;">
+                    <form id="createMeetingForm" class="manual-adj-form-grid">
                         <div class="auth-input-group" style="margin-bottom: 0;">
                             <label class="auth-label">Title</label>
                             <input type="text" id="meetingTitle" class="auth-input"
@@ -427,7 +431,7 @@
 
             <!-- TAB 4: LEADERBOARD -->
             <div id="main-content-leaderboard" class="main-tab-content" style="display: none;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                <div class="grid-cols-2">
 
                     <!-- Top 5 Card -->
                     <div
