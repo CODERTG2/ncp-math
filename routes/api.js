@@ -1136,6 +1136,13 @@ async function getStudentHoursFromDatabase(students, res) {
 
       for (const month of academicMonths) {
 
+        const monthReqs = settings.memberRequirements[month] || {
+          New: { baseHours: 2.5, penaltyRate: 0.5 },
+          Old: { baseHours: 1.0, penaltyRate: 0.5 },
+          Officer: { baseHours: 0, penaltyRate: 0 }
+        };
+        const studentReqs = monthReqs[memberType] || monthReqs['New'];
+
         let requiredForMonth = studentReqs.baseHours;
 
         const monthOrder = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
@@ -1308,6 +1315,13 @@ function calculateStudentStats(student, adjustments, schedule, settings, current
       totalHoursTutoredSoFar += actualHours;
 
       // Calculate required hours for this month
+      const monthReqs = settings.memberRequirements[month] || {
+        New: { baseHours: 2.5, penaltyRate: 0.5 },
+        Old: { baseHours: 1.0, penaltyRate: 0.5 },
+        Officer: { baseHours: 0, penaltyRate: 0 }
+      };
+      const studentReqs = monthReqs[memberType] || monthReqs['New'];
+
       let requiredForMonth = studentReqs.baseHours;
 
       const monthOrder = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
@@ -1352,6 +1366,13 @@ function calculateStudentStats(student, adjustments, schedule, settings, current
       }
 
       // Calculate required hours for future months
+      const monthReqs = settings.memberRequirements[month] || {
+        New: { baseHours: 2.5, penaltyRate: 0.5 },
+        Old: { baseHours: 1.0, penaltyRate: 0.5 },
+        Officer: { baseHours: 0, penaltyRate: 0 }
+      };
+      const studentReqs = monthReqs[memberType] || monthReqs['New'];
+
       let requiredForMonth = studentReqs.baseHours;
 
       const monthOrder = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
