@@ -1456,7 +1456,7 @@ router.get('/monthly-requirements', isAuthenticated, async (req, res) => {
 // Get student stats for dashboard
 router.get('/student-stats', isAuthenticated, async (req, res) => {
   try {
-    if (!process.env.SPREADSHEET_ID) {
+    if (!googleSheetsService.isConfigured()) {
       return res.json({
         hoursTutoredThisMonth: 0,
         hoursSignedUpThisMonth: 0,
@@ -1718,7 +1718,7 @@ router.get('/student-stats', isAuthenticated, async (req, res) => {
 // Get all students' stats (teachers only)
 router.get('/all-students-stats', isAuthenticated, isTeacher, async (req, res) => {
   try {
-    if (!process.env.SPREADSHEET_ID) {
+    if (!googleSheetsService.isConfigured()) {
       return res.json({ students: [] });
     }
 
@@ -1757,7 +1757,7 @@ router.get('/all-students-stats', isAuthenticated, isTeacher, async (req, res) =
 // Get leaderboard stats (Top 5 / Bottom 5 by hoursToMakeUp)
 router.get('/leaderboard', isAuthenticated, async (req, res) => {
   try {
-    if (!process.env.SPREADSHEET_ID) {
+    if (!googleSheetsService.isConfigured()) {
       return res.json({ top5: [], bottom5: [] });
     }
 
