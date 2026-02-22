@@ -129,6 +129,11 @@ app.use('*', (req, res) => {
 // Error handler
 app.use((error, req, res, next) => {
   console.error(error);
+
+  if (res.headersSent) {
+    return next(error);
+  }
+
   res.status(500).render('error', {
     title: 'Server Error',
     message: 'Something went wrong on our end.',
