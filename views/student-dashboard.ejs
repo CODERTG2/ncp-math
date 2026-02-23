@@ -1091,10 +1091,22 @@
                             <div style="background: var(--bg-secondary); border: 1px solid ${isPenaltyActive ? '#fca5a5' : 'var(--border-color)'}; border-radius: 8px; padding: 1rem; text-align: center; position: relative; overflow: hidden;">
                                 ${isPenaltyActive ? '<div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: #ef4444;"></div>' : ''}
                                 <h4 style="margin: 0 0 0.5rem 0; color: var(--text-primary); font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">${req.monthName}</h4>
-                                <div style="font-size: 1.5rem; font-weight: bold; color: var(--text-primary); margin: 0.5rem 0;">
-                                    ${req.baseHours} <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-secondary);">hrs</span>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.75rem;">
+                                    <div style="text-align: left;">
+                                        <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Base Req</div>
+                                        <div style="font-size: 1.2rem; font-weight: bold; color: var(--text-primary);">
+                                            ${req.baseHours}<span style="font-size: 0.75rem; font-weight: normal; color: var(--text-secondary);">hr</span>
+                                        </div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Tutored</div>
+                                        <div style="font-size: 1.2rem; font-weight: bold; color: ${req.tutoredHours >= req.baseHours ? '#10b981' : 'var(--text-primary)'};">
+                                            ${req.tutoredHours}<span style="font-size: 0.75rem; font-weight: normal; color: var(--text-secondary);">hr</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div style="font-size: 0.85rem; color: ${isPenaltyActive ? '#ef4444' : 'var(--text-secondary)'}; background: var(--bg-primary); padding: 0.25rem; border-radius: 4px; margin-top: 0.5rem;">
+                                
+                                <div style="font-size: 0.85rem; color: ${isPenaltyActive ? '#ef4444' : 'var(--text-secondary)'}; background: var(--bg-primary); padding: 0.25rem; border-radius: 4px; margin-top: 0.75rem;">
                                     ${isPenaltyActive ? '<i class="fas fa-exclamation-triangle"></i> ' : ''}Penalty: ${req.penaltyRate}x
                                 </div>
                             </div>

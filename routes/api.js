@@ -1408,11 +1408,45 @@ function calculateStudentStats(student, adjustments, schedule, settings, current
   };
 }
 
-// Get monthly requirements for the student's member type
+// Get monthly requirements and actual tutored hours for the student's member type
 router.get('/monthly-requirements', isAuthenticated, async (req, res) => {
   try {
     const settings = await Settings.getSettings();
     const memberType = req.user.memberType || 'New';
+    const userName = `${req.user.firstName} ${req.user.lastName || ''}`.trim();
+    const userId = req.user._id;
+
+    // Fetch schedule and adjustments to calculate actual tutored hours
+    let schedule = [];
+    if (googleSheetsService.isConfigured()) {
+      try {
+        schedule = await googleSheetsService.getTutoringSchedule();
+      } catch (sheetsError) {
+        console.warn('Google Sheets not available, using fallback data:', sheetsError.message);
+        schedule = getFallbackSchedule();
+      }
+    } else {
+      schedule = getFallbackSchedule();
+    }
+
+    const allAdjustments = await HourAdjustment.find({ $or: [{ userId: userId }, { userId: null }] }).lean();
+
+    // Filter adjustments to only those applying to this user
+    const studentAdjustments = allAdjustments.filter(adj =>
+      (adj.userId && adj.userId.toString() === userId.toString()) ||
+      adj.userId === null
+    );
+
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+
+    let academicYear;
+    if (currentMonth >= 9) { // September or later - fall semester
+      academicYear = currentYear;
+    } else { // January to August - spring semester
+      academicYear = currentYear - 1;
+    }
 
     // We want to return the penaltyMonth and an array of objects for Sept-June
     const academicMonths = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
@@ -1423,6 +1457,36 @@ router.get('/monthly-requirements', isAuthenticated, async (req, res) => {
     };
 
     const requirements = academicMonths.map(month => {
+      // 1. Calculate actual hours tutored for this month
+      let actualHours = 0;
+      let monthYear;
+      if (month === '09' || month === '10' || month === '11' || month === '12') {
+        monthYear = academicYear;
+      } else {
+        monthYear = academicYear + 1;
+      }
+
+      // Tally check-ins
+      schedule.forEach(session => {
+        const sessionDate = new Date(session.date);
+        const sessionMonth = String(sessionDate.getMonth() + 1).padStart(2, '0');
+        const sessionYear = sessionDate.getFullYear();
+
+        if (sessionMonth === month && sessionYear === monthYear) {
+          const userTutor = session.tutors?.find(tutor => tutor.name === userName);
+          if (userTutor && userTutor.checkedIn) {
+            actualHours += parseFloat(session.numHours) || 1;
+          }
+        }
+      });
+
+      // Tally adjustments
+      const monthAdjustments = studentAdjustments
+        .filter(adj => adj.monthApplied === month && (!adj.academicYear || adj.academicYear === academicYear))
+        .reduce((sum, adj) => sum + adj.amount, 0);
+      actualHours += monthAdjustments;
+
+      // 2. Fetch Base Requirement config
       const monthReqs = settings.memberRequirements[month] || {
         New: { baseHours: 2.5, penaltyRate: 0.5 },
         Old: { baseHours: 1.0, penaltyRate: 0.5 },
@@ -1435,7 +1499,8 @@ router.get('/monthly-requirements', isAuthenticated, async (req, res) => {
         monthCode: month,
         monthName: monthNames[month],
         baseHours: studentReqs.baseHours,
-        penaltyRate: studentReqs.penaltyRate
+        penaltyRate: studentReqs.penaltyRate,
+        tutoredHours: actualHours
       };
     });
 
