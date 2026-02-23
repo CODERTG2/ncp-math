@@ -1170,8 +1170,13 @@ async function getStudentHoursFromDatabase(students, res) {
         const missedThisMonth = Math.max(0, requiredForMonth - actualHours);
 
         cumulativeMissedHours += missedThisMonth;
+
+        // Non-accumulating penalty: Only track the MOST RECENT month's missed hours
+        // for penalty application in the NEXT month.
         if (month !== '09') {
-          penaltyEligibleMissedHours += missedThisMonth;
+          penaltyEligibleMissedHours = missedThisMonth;
+        } else {
+          penaltyEligibleMissedHours = missedThisMonth;
         }
       }
 
@@ -1352,8 +1357,13 @@ function calculateStudentStats(student, adjustments, schedule, settings, current
       // Calculate missed hours for this month to carry forward
       const missedThisMonth = Math.max(0, requiredForMonth - actualHours);
       totalMissedHours += missedThisMonth;
+
+      // Non-accumulating penalty: Only track the MOST RECENT month's missed hours
+      // for penalty application in the NEXT month.
       if (month !== '09') {
-        penaltyEligibleMissedHours += missedThisMonth;
+        penaltyEligibleMissedHours = missedThisMonth;
+      } else {
+        penaltyEligibleMissedHours = missedThisMonth;
       }
     }
 
@@ -1407,8 +1417,12 @@ function calculateStudentStats(student, adjustments, schedule, settings, current
       // Assume they won't tutor in future months for projection
       const missedThisMonth = requiredForMonth;
       projectedMissedHours += missedThisMonth;
+
+      // Non-accumulating penalty
       if (month !== '09') {
-        projectedPenaltyEligibleMissedHours += missedThisMonth;
+        projectedPenaltyEligibleMissedHours = missedThisMonth;
+      } else {
+        projectedPenaltyEligibleMissedHours = missedThisMonth;
       }
     }
 
