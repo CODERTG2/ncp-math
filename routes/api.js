@@ -1284,10 +1284,10 @@ function calculateStudentStats(student, adjustments, schedule, settings, current
 
     // Get all monthly hours for academic year (Sep to June)
     const academicMonths = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
-    let totalMissedHours = 0;
-    let penaltyEligibleMissedHours = 0;
-    let totalRequiredHours = 0;
+
+    let debts = []; // Array of { srcMonth, type: 'base' | 'penalty', amount, rate }
     let totalHoursTutoredSoFar = 0; // Track cumulative hours through current month only
+    const now = new Date(); // To check if a month has passed yet
 
     // Process each month to calculate required hours and penalties
     for (let i = 0; i < academicMonths.length; i++) {
@@ -1302,133 +1302,98 @@ function calculateStudentStats(student, adjustments, schedule, settings, current
         monthYear = academicYear + 1; // Spring semester (next calendar year)
       }
 
-      // Only process months that have passed
       const monthDate = new Date(monthYear, parseInt(month) - 1, 1);
-      const now = new Date();
-      if (monthDate > now) {
-        break; // Haven't reached this month yet
-      }
+      const isPastMonth = monthDate <= now;
 
-      // Get actual hours tutored for this month
-      schedule.forEach(session => {
-        const sessionDate = new Date(session.date);
-        const sessionMonth = String(sessionDate.getMonth() + 1).padStart(2, '0');
-        const sessionYear = sessionDate.getFullYear();
+      // 1. Determine penalty for this month based on LAST MONTH'S unpaid base debt
+      let currentMonthPenalty = 0;
+      if (i > 0) {
+        const lastMonth = academicMonths[i - 1];
+        const unpaidLastMonthBase = debts.find(d => d.srcMonth === lastMonth && d.type === 'base');
 
-        if (sessionMonth === month && sessionYear === monthYear) {
-          const userTutor = session.tutors.find(tutor => tutor.name === userName);
-          if (userTutor && userTutor.checkedIn) {
-            actualHours += parseFloat(session.numHours) || 1;
+        const monthOrder = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
+        const penaltyStartIndex = monthOrder.indexOf(settings.penaltyMonth);
+        const currentMonthIndex = monthOrder.indexOf(month);
+
+        if (unpaidLastMonthBase && unpaidLastMonthBase.amount > 0 && penaltyStartIndex !== -1 && currentMonthIndex >= penaltyStartIndex) {
+          currentMonthPenalty = unpaidLastMonthBase.amount * unpaidLastMonthBase.rate;
+          currentMonthPenalty = Math.floor(currentMonthPenalty * 2) / 2;
+
+          if (currentMonthPenalty > 0) {
+            debts.push({
+              srcMonth: month,
+              type: 'penalty',
+              amount: currentMonthPenalty,
+              rate: 0
+            });
           }
         }
+      }
+
+      // 2. Get this month's base requirement
+      const monthReqs = settings.memberRequirements[month] || {
+        New: { baseHours: 2.5, penaltyRate: 0.5 },
+        Old: { baseHours: 1.0, penaltyRate: 0.5 },
+        Officer: { baseHours: 0, penaltyRate: 0 }
+      };
+      const studentReqs = monthReqs[memberType] || monthReqs['New'];
+
+      debts.push({
+        srcMonth: month,
+        type: 'base',
+        amount: studentReqs.baseHours,
+        rate: studentReqs.penaltyRate
       });
 
-      // Apply adjustments
-      const monthAdjustments = studentAdjustments
-        .filter(adj => adj.monthApplied === month && (!adj.academicYear || adj.academicYear === academicYear))
-        .reduce((sum, adj) => sum + adj.amount, 0);
-      actualHours += monthAdjustments;
+      // 3. Apply this month's tutored hours (if it has actually passed)
+      if (isPastMonth) {
+        // Get actual hours tutored for this month
+        schedule.forEach(session => {
+          const sessionDate = new Date(session.date);
+          const sessionMonth = String(sessionDate.getMonth() + 1).padStart(2, '0');
+          const sessionYear = sessionDate.getFullYear();
 
-      // Accumulate hours tutored so far (through current month only)
-      totalHoursTutoredSoFar += actualHours;
+          if (sessionMonth === month && sessionYear === monthYear) {
+            const userTutor = session.tutors.find(tutor => tutor.name === userName);
+            if (userTutor && userTutor.checkedIn) {
+              actualHours += parseFloat(session.numHours) || 1;
+            }
+          }
+        });
 
-      // Calculate required hours for this month
-      const monthReqs = settings.memberRequirements[month] || {
-        New: { baseHours: 2.5, penaltyRate: 0.5 },
-        Old: { baseHours: 1.0, penaltyRate: 0.5 },
-        Officer: { baseHours: 0, penaltyRate: 0 }
-      };
-      const studentReqs = monthReqs[memberType] || monthReqs['New'];
+        // Apply adjustments
+        const monthAdjustments = studentAdjustments
+          .filter(adj => adj.monthApplied === month && (!adj.academicYear || adj.academicYear === academicYear))
+          .reduce((sum, adj) => sum + adj.amount, 0);
+        actualHours += monthAdjustments;
 
-      let requiredForMonth = studentReqs.baseHours;
+        // Accumulate hours tutored so far (through current month only)
+        totalHoursTutoredSoFar += actualHours;
 
-      const monthOrder = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
-      const penaltyStartIndex = monthOrder.indexOf(settings.penaltyMonth);
-      const currentMonthIndex = monthOrder.indexOf(month);
+        // Pay off debts chronologically
+        let availableHoursToPay = actualHours;
+        for (let j = 0; j < debts.length; j++) {
+          if (availableHoursToPay <= 0) break;
 
-      if (penaltyEligibleMissedHours > 0 && penaltyStartIndex !== -1 && currentMonthIndex >= penaltyStartIndex) {
-        let penalty = penaltyEligibleMissedHours * studentReqs.penaltyRate;
-        penalty = Math.floor(penalty * 2) / 2;
-        requiredForMonth += penalty;
-      }
+          if (debts[j].amount > 0) {
+            if (availableHoursToPay >= debts[j].amount) {
+              availableHoursToPay -= debts[j].amount;
+              debts[j].amount = 0; // Fully paid
+            } else {
+              debts[j].amount -= availableHoursToPay;
+              availableHoursToPay = 0; // Exhausted
+            }
+          }
+        }
 
-      totalRequiredHours += requiredForMonth;
-
-      // Calculate missed hours for this month to carry forward
-      const missedThisMonth = Math.max(0, requiredForMonth - actualHours);
-      totalMissedHours += missedThisMonth;
-
-      // Non-accumulating penalty: Only track the MOST RECENT month's missed hours
-      // for penalty application in the NEXT month.
-      if (month !== '09') {
-        penaltyEligibleMissedHours = missedThisMonth;
-      } else {
-        penaltyEligibleMissedHours = missedThisMonth;
-      }
-    }
-
-    // Calculate hours to make up so far (current month deficit)
-    const hoursToMakeUpSoFar = Math.max(0, totalRequiredHours - totalHoursTutoredSoFar);
-
-    // Calculate projected hours to make up for whole year
-    let totalRequiredWholeYear = totalRequiredHours;
-    let projectedMissedHours = totalMissedHours;
-    let projectedPenaltyEligibleMissedHours = penaltyEligibleMissedHours;
-
-    for (let i = 0; i < academicMonths.length; i++) {
-      const month = academicMonths[i];
-      let monthYear;
-      if (month === '09' || month === '10' || month === '11' || month === '12') {
-        monthYear = academicYear;
-      } else {
-        monthYear = academicYear + 1;
-      }
-
-      const monthDate = new Date(monthYear, parseInt(month) - 1, 1);
-      const now = new Date();
-
-      // Only process future months
-      if (monthDate <= now) {
-        continue;
-      }
-
-      // Calculate required hours for future months
-      const monthReqs = settings.memberRequirements[month] || {
-        New: { baseHours: 2.5, penaltyRate: 0.5 },
-        Old: { baseHours: 1.0, penaltyRate: 0.5 },
-        Officer: { baseHours: 0, penaltyRate: 0 }
-      };
-      const studentReqs = monthReqs[memberType] || monthReqs['New'];
-
-      let requiredForMonth = studentReqs.baseHours;
-
-      const monthOrder = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
-      const penaltyStartIndex = monthOrder.indexOf(settings.penaltyMonth);
-      const currentMonthIndex = monthOrder.indexOf(month);
-
-      if (projectedPenaltyEligibleMissedHours > 0 && penaltyStartIndex !== -1 && currentMonthIndex >= penaltyStartIndex) {
-        let penalty = projectedPenaltyEligibleMissedHours * studentReqs.penaltyRate;
-        penalty = Math.floor(penalty * 2) / 2;
-        requiredForMonth += penalty;
-      }
-
-      totalRequiredWholeYear += requiredForMonth;
-
-      // Assume they won't tutor in future months for projection
-      const missedThisMonth = requiredForMonth;
-      projectedMissedHours += missedThisMonth;
-
-      // Non-accumulating penalty
-      if (month !== '09') {
-        projectedPenaltyEligibleMissedHours = missedThisMonth;
-      } else {
-        projectedPenaltyEligibleMissedHours = missedThisMonth;
+        // At the end of every PAST month, record the current total debt as `hoursToMakeUpSoFar`
+        hoursToMakeUp = debts.reduce((sum, d) => sum + d.amount, 0);
       }
     }
 
-    hoursToMakeUpWholeYear = Math.max(0, totalRequiredWholeYear - totalHoursTutoredSoFar);
-
-    hoursToMakeUp = hoursToMakeUpSoFar; // Keep for backwards compatibility
+    // After projecting out through the end of the year (June), grab the final debt as `hoursToMakeUpWholeYear`
+    // (Notice that future months add requirements to `debts` but don't add any actualHours, simulating 0 tutored)
+    hoursToMakeUpWholeYear = debts.reduce((sum, d) => sum + d.amount, 0);
   }
 
   return {
