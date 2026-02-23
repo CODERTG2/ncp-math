@@ -1773,13 +1773,17 @@ router.get('/leaderboard', isAuthenticated, async (req, res) => {
 
     // Calculate statistics for each student using our helper
     // We only care about hoursToMakeUp for the leaderboard
-    const studentsStats = students.map(student => {
+    let studentsStats = students.map(student => {
       const stats = calculateStudentStats(student, adjustments, schedule, settings, currentMonth, currentYear);
       return {
         name: `${stats.firstName} ${stats.lastName}`.trim(),
         hoursToMakeUp: stats.hoursToMakeUp
       };
     });
+
+    // Exclude specific students from the leaderboard per user request
+    const excludedStudents = ["t g", "tanmay garg", "victor wodzien"];
+    studentsStats = studentsStats.filter(stat => !excludedStudents.includes(stat.name.toLowerCase()));
 
     // Sort students by highest hours To Make Up (descending)
     studentsStats.sort((a, b) => b.hoursToMakeUp - a.hoursToMakeUp);
