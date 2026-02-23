@@ -36,7 +36,7 @@ const userSchema = new mongoose.Schema({
   },
   memberType: {
     type: String,
-    enum: ['New', 'Old', 'Officer'],
+    enum: ['New', 'Old', 'FreshMentors', 'Officer'],
     default: 'New'
   },
   firstName: {

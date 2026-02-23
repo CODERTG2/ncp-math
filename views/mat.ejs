@@ -10,16 +10,19 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    </script>
 </head>
 
 <body>
     <!-- Navigation Bar -->
     <nav class="navbar" id="navbar">
         <div class="nav-container">
-            <div class="nav-logo">
-                <div class="logo-placeholder">
-                    <i class="fas fa-infinity"></i>
-                </div>
+            <div class="nav-logo" style="cursor: pointer;" onclick="window.location.href='/'">
+                <img src="/img/logo.png" alt="Mu Alpha Theta Logo" class="nav-logo-img">
                 <span class="nav-title">Mu Alpha Theta</span>
             </div>
             <button class="mobile-menu-btn" onclick="document.querySelector('.nav-menu').classList.toggle('active')">
@@ -28,16 +31,16 @@
             <div class="nav-menu">
                 <button class="nav-btn" onclick="window.location.href='/resources'">
                     <i class="fas fa-book"></i>
-                    Resources
+                    Study Resources
                 </button>
                 <button class="nav-btn" onclick="window.location.href='/ai'">
                     <i class="fas fa-robot"></i>
-                    AI
+                    AI Assistance
                 </button>
                 <% if (typeof user !=='undefined' && user) { %>
                     <button class="nav-btn" onclick="window.location.href='/dashboard/<%= user.role %>'">
                         <i class="fas fa-tachometer-alt"></i>
-                        Dashboard
+                        Tutoring Dashboard
                     </button>
                     <button class="nav-btn" onclick="window.location.href='/logout'">
                         <i class="fas fa-sign-out-alt"></i>
@@ -284,6 +287,11 @@
         </div>
     </main>
 
+    <!-- Theme Toggle -->
+    <button class="theme-toggle-btn" id="themeToggleBtn" aria-label="Toggle Dark Mode">
+        <i class="fas fa-moon"></i>
+    </button>
+
     <!-- JavaScript -->
     <script>
         // Tab switching functionality
@@ -412,6 +420,26 @@
                 }
             });
         });
+
+        // Theme toggling
+        const themeBtn = document.getElementById('themeToggleBtn');
+        if (themeBtn) {
+            if (localStorage.getItem('theme') === 'dark') {
+                themeBtn.innerHTML = '<i class="fas fa-sun"></i>';
+            }
+            themeBtn.addEventListener('click', () => {
+                const isDark = document.documentElement.hasAttribute('data-theme');
+                if (isDark) {
+                    document.documentElement.removeAttribute('data-theme');
+                    localStorage.setItem('theme', 'light');
+                    themeBtn.innerHTML = '<i class="fas fa-moon"></i>';
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                    themeBtn.innerHTML = '<i class="fas fa-sun"></i>';
+                }
+            });
+        }
     </script>
 </body>
 

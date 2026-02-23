@@ -5,22 +5,33 @@ class GoogleSheetsService {
   constructor() {
     this.auth = null;
     this.sheets = null;
-    this.spreadsheetId = process.env.GOOGLE_SHEETS_ID;
+    this.spreadsheetId = process.env.GOOGLE_SHEETS_ID || process.env.SPREADSHEET_ID;
     this.range = 'Sheet1!A:T'; // Updated to include all tutor and check-in columns (A to T)
+  }
+
+  isConfigured() {
+    const hasServiceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY && process.env.GOOGLE_SHEETS_ID;
+    const hasIndividualCreds = process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY && process.env.SPREADSHEET_ID;
+    return Boolean(hasServiceAccountJson || hasIndividualCreds);
   }
 
   async initialize() {
     try {
-      // Check if Google Sheets credentials are available
-      const serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-      
-      if (!serviceAccountKey || serviceAccountKey === '{}' || !this.spreadsheetId) {
+      if (!this.isConfigured()) {
         throw new Error('Google Sheets credentials not configured');
       }
 
-      // Initialize Google Sheets API with service account
-      const credentials = JSON.parse(serviceAccountKey);
-      
+      let credentials;
+
+      if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+        credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY);
+      } else {
+        credentials = {
+          client_email: process.env.GOOGLE_CLIENT_EMAIL,
+          private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        };
+      }
+
       this.auth = new google.auth.GoogleAuth({
         credentials,
         scopes: ['https://www.googleapis.com/auth/spreadsheets']
@@ -52,10 +63,10 @@ class GoogleSheetsService {
 
       // Skip header row and process data
       const schedule = rows.slice(1).map(row => {
-        const [date, day, maxTutors, time, numHours, room, cancelled, 
-               tutor1, checkin1, tutor2, checkin2, tutor3, checkin3,
-               tutor4, checkin4, tutor5, checkin5, tutor6, checkin6] = row;
-        
+        const [date, day, maxTutors, time, numHours, room, cancelled,
+          tutor1, checkin1, tutor2, checkin2, tutor3, checkin3,
+          tutor4, checkin4, tutor5, checkin5, tutor6, checkin6] = row;
+
         // Convert date format if needed (MM/DD/YYYY to YYYY-MM-DD)
         // Use proper date parsing to avoid timezone issues
         let formattedDate;
@@ -136,7 +147,7 @@ class GoogleSheetsService {
       // Find the row index for the session
       for (let i = 1; i < rows.length; i++) { // Skip header row
         const [rowDate, day, maxTutors, rowTime] = rows[i];
-        
+
         // Convert date format properly
         let formattedDate;
         if (rowDate.includes('/')) {
@@ -145,7 +156,7 @@ class GoogleSheetsService {
         } else {
           formattedDate = rowDate;
         }
-        
+
         if (formattedDate === date && rowTime === time) {
           return i + 1; // +1 because sheets are 1-indexed
         }
@@ -176,10 +187,10 @@ class GoogleSheetsService {
 
       // Find the session
       for (let i = 1; i < rows.length; i++) { // Skip header row
-        const [rowDate, day, maxTutors, rowTime, numHours, room, cancelled, 
-               tutor1, checkin1, tutor2, checkin2, tutor3, checkin3,
-               tutor4, checkin4, tutor5, checkin5, tutor6, checkin6] = rows[i];
-        
+        const [rowDate, day, maxTutors, rowTime, numHours, room, cancelled,
+          tutor1, checkin1, tutor2, checkin2, tutor3, checkin3,
+          tutor4, checkin4, tutor5, checkin5, tutor6, checkin6] = rows[i];
+
         // Convert date format properly
         let formattedDate;
         if (rowDate.includes('/')) {
@@ -188,7 +199,7 @@ class GoogleSheetsService {
         } else {
           formattedDate = rowDate;
         }
-        
+
         if (formattedDate === date && rowTime === time) {
           return {
             rowIndex: i + 1, // 1-indexed for sheets
@@ -280,7 +291,7 @@ class GoogleSheetsService {
       }
 
       const tutor = sessionData.tutors[tutorIndex];
-      
+
       // Clear both tutor name and check-in status
       const tutorColumn = tutor.column;
       const checkinColumn = String.fromCharCode(tutorColumn.charCodeAt(0) + 1); // Next column
@@ -343,19 +354,19 @@ class GoogleSheetsService {
       });
 
       console.log(`Successfully checked in ${tutorName} for session: ${date} ${time}`);
-      
+
       // Check if this is between 9 AM and 2 PM for Math Tables requirement
       const sessionTime = sessionData.time;
       const hour = parseInt(sessionTime.split(':')[0]);
       const isPM = sessionTime.includes('PM');
       const isAM = sessionTime.includes('AM');
-      
+
       let hourIn24 = hour;
       if (isPM && hour !== 12) hourIn24 += 12;
       if (isAM && hour === 12) hourIn24 = 0;
-      
+
       const requiresMathTables = hourIn24 >= 9 && hourIn24 < 14; // 9 AM to 2 PM
-      
+
       return {
         success: true,
         requiresMathTables
@@ -388,14 +399,14 @@ class GoogleSheetsService {
       }
 
       const updateRequests = [];
-      
+
       if (updates.maxTutors !== undefined) {
         updateRequests.push({
           range: `Sheet1!C${sessionData.rowIndex}`,
           values: [[updates.maxTutors]]
         });
       }
-      
+
       if (updates.time !== undefined) {
         updateRequests.push({
           range: `Sheet1!D${sessionData.rowIndex}`,
@@ -409,14 +420,14 @@ class GoogleSheetsService {
           values: [[updates.numHours]]
         });
       }
-      
+
       if (updates.room !== undefined) {
         updateRequests.push({
           range: `Sheet1!F${sessionData.rowIndex}`,
           values: [[updates.room]]
         });
       }
-      
+
       if (updates.cancelled !== undefined) {
         updateRequests.push({
           range: `Sheet1!G${sessionData.rowIndex}`,
@@ -458,7 +469,7 @@ class GoogleSheetsService {
         formattedDate, day, maxTutors, time, numHours, room || this.assignRoom(time), 'No',
         '', '', '', '', '', '', '', '', '', '', '', ''  // 12 empty slots for 6 tutors and 6 check-ins
       ]];
-      
+
       await this.sheets.spreadsheets.values.append({
         spreadsheetId: this.spreadsheetId,
         range: 'Sheet1!A:T',
@@ -523,9 +534,9 @@ class GoogleSheetsService {
       // Find which tutor column this tutor is in and update the corresponding check-in column
       const tutorColumns = ['H', 'J', 'L', 'N', 'P', 'R'];
       const checkinColumns = ['I', 'K', 'M', 'O', 'Q', 'S'];
-      
+
       let updateColumn = null;
-      
+
       for (let i = 0; i < tutorColumns.length; i++) {
         const tutorCell = `${tutorColumns[i]}${sessionData.rowIndex}`;
         const tutorResponse = await this.sheets.spreadsheets.values.get({
@@ -567,6 +578,78 @@ class GoogleSheetsService {
       throw error;
     }
   }
+  async logAdjustment(adjustment, user) {
+    try {
+      if (!this.sheets) {
+        await this.initialize();
+      }
+
+      // Check if Adjustments sheet exists, create if not
+      try {
+        await this.sheets.spreadsheets.values.get({
+          spreadsheetId: this.spreadsheetId,
+          range: 'Adjustments!A1',
+        });
+      } catch (error) {
+        // Sheet likely doesn't exist, create it
+        await this.sheets.spreadsheets.batchUpdate({
+          spreadsheetId: this.spreadsheetId,
+          requestBody: {
+            requests: [{
+              addSheet: {
+                properties: {
+                  title: 'Adjustments'
+                }
+              }
+            }]
+          }
+        });
+
+        // Add header row
+        await this.sheets.spreadsheets.values.append({
+          spreadsheetId: this.spreadsheetId,
+          range: 'Adjustments!A1',
+          valueInputOption: 'USER_ENTERED',
+          requestBody: {
+            values: [['Date', 'Student Name', 'Member Type', 'Amount', 'Reason', 'Month Applied', 'Academic Year']]
+          }
+        });
+      }
+
+      // Format date
+      const dateObj = new Date(adjustment.date);
+      const formattedDate = `${String(dateObj.getMonth() + 1).padStart(2, '0')}/${String(dateObj.getDate()).padStart(2, '0')}/${dateObj.getFullYear()}`;
+
+      // Prepare row data
+      const values = [[
+        formattedDate,
+        `${user.firstName} ${user.lastName}`,
+        user.memberType || 'New',
+        adjustment.amount,
+        adjustment.reason,
+        adjustment.monthApplied,
+        adjustment.academicYear
+      ]];
+
+      // Append to Adjustments sheet
+      await this.sheets.spreadsheets.values.append({
+        spreadsheetId: this.spreadsheetId,
+        range: 'Adjustments!A:G',
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+          values: values
+        }
+      });
+
+      console.log(`Successfully logged adjustment for ${user.firstName} ${user.lastName}`);
+      return true;
+    } catch (error) {
+      console.error('Error logging adjustment to Google Sheets:', error);
+      // Don't throw, just log error so we don't break the main flow
+      return false;
+    }
+  }
 }
+
 
 export default new GoogleSheetsService();

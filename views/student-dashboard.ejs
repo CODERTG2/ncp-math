@@ -10,16 +10,19 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    </script>
 </head>
 
 <body>
     <!-- Navigation Bar -->
     <nav class="navbar" id="navbar">
         <div class="nav-container">
-            <div class="nav-logo">
-                <div class="logo-placeholder">
-                    <i class="fas fa-infinity"></i>
-                </div>
+            <div class="nav-logo" style="cursor: pointer;" onclick="window.location.href='/'">
+                <img src="/img/logo.png" alt="Mu Alpha Theta Logo" class="nav-logo-img">
                 <span class="nav-title">Mu Alpha Theta</span>
             </div>
             <button class="mobile-menu-btn" onclick="document.querySelector('.nav-menu').classList.toggle('active')">
@@ -28,15 +31,15 @@
             <div class="nav-menu">
                 <button class="nav-btn" onclick="window.location.href='/resources'">
                     <i class="fas fa-book"></i>
-                    Resources
+                    Study Resources
                 </button>
                 <button class="nav-btn" onclick="window.location.href='/ai'">
                     <i class="fas fa-robot"></i>
-                    AI
+                    AI Assistance
                 </button>
                 <button class="nav-btn active">
                     <i class="fas fa-tachometer-alt"></i>
-                    Dashboard
+                    Tutoring Dashboard
                 </button>
                 <button class="nav-btn" onclick="window.location.href='/logout'">
                     <i class="fas fa-sign-out-alt"></i>
@@ -53,10 +56,7 @@
             <div class="modern-calendar-container">
                 <!-- Calendar Header -->
                 <div class="calendar-header-section">
-                    <div class="calendar-title-area">
-                        <div class="title-icon">
-                            <i class="fas fa-calendar-check"></i>
-                        </div>
+                    <div class="calendar-title-area" style="margin-left: 0;">
                         <div class="title-content">
                             <h1 class="main-title">Tutoring Calendar</h1>
                             <p class="subtitle">Book your math tutoring sessions</p>
@@ -65,7 +65,9 @@
 
                     <!-- User Welcome -->
                     <div class="user-greeting">
-                        <span class="greeting-text">Hello, <%= user.firstName %>!</span>
+                        <span class="greeting-text">Hello, <%= user.firstName %>! <span
+                                    style="font-size: 0.8em; opacity: 0.8;">(<%= user.memberType || 'New' %>
+                                        )</span></span>
                         <div class="user-avatar">
                             <%= user.firstName.charAt(0).toUpperCase() %>
                         </div>
@@ -140,8 +142,8 @@
                             Meeting Check-in
                         </h3>
                     </div>
-                    <form id="meetingCheckinForm" style="display: flex; gap: 1rem; align-items: flex-end;">
-                        <div class="auth-input-group" style="flex: 1;">
+                    <form id="meetingCheckinForm" class="flex-wrap-form">
+                        <div class="auth-input-group" style="flex: 1; min-width: 250px;">
                             <label for="checkinCode" class="auth-label">Enter Meeting Code</label>
                             <input type="text" id="checkinCode" class="auth-input" placeholder="e.g. MATH2025" required>
                         </div>
@@ -252,13 +254,128 @@
                         </div>
                         <div class="stat-item" style="text-align: center;">
                             <div class="stat-number" id="hoursToMakeUp">--</div>
-                            <div class="stat-label">Hours to Make Up</div>
+                            <div class="stat-label">Current Hours to Make Up</div>
+                        </div>
+                        <div class="stat-item" style="text-align: center;">
+                            <div class="stat-number" id="hoursToMakeUpWholeYear">--</div>
+                            <div class="stat-label">Projected End-of-Year Deficit</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Monthly Requirements & Penalties Calendar -->
+            <div class="auth-card" style="margin-top: 2rem;">
+                <div class="auth-body">
+                    <div
+                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
+                        <h3
+                            style="margin: 0; display: flex; align-items: center; gap: 0.75rem; font-size: 1.25rem; color: #1f2937;">
+                            <div
+                                style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 0.5rem; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-calendar-alt" style="color: white; font-size: 1rem;"></i>
+                            </div>
+                            My Monthly Requirements & Penalties
+                        </h3>
+                    </div>
+
+                    <div id="monthlyRequirementsLoading" class="modern-loading"
+                        style="text-align: center; padding: 2rem;">
+                        <div class="loading-spinner"></div>
+                        <span>Loading your monthly requirements...</span>
+                    </div>
+
+                    <div id="monthlyRequirementsContainer"
+                        style="display: none; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem;">
+                        <!-- Month cards injected here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaderboard -->
+            <div class="auth-card" style="margin-top: 2rem;">
+                <div class="auth-body">
+                    <div
+                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+                        <h3
+                            style="margin: 0; display: flex; align-items: center; gap: 0.75rem; font-size: 1.25rem; color: #1f2937;">
+                            <div
+                                style="background: linear-gradient(135deg, #10b981, #059669); padding: 0.5rem; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-trophy" style="color: white; font-size: 1rem;"></i>
+                            </div>
+                            Leaderboard
+                        </h3>
+                    </div>
+
+                    <div class="grid-cols-2">
+                        <!-- Top 5 Card -->
+                        <div
+                            style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h4 style="font-size: 1.1rem; font-weight: 600; color: #10b981;"><i
+                                        class="fas fa-medal"></i> Top 5: Least Hours to Make Up</h4>
+                            </div>
+                            <div
+                                style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-primary);">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                                    <thead style="background: var(--bg-secondary); position: sticky; top: 0;">
+                                        <tr>
+                                            <th
+                                                style="padding: 0.5rem; text-align: left; border-bottom: 1px solid var(--border-color);">
+                                                Name</th>
+                                            <th
+                                                style="padding: 0.5rem; text-align: right; border-bottom: 1px solid var(--border-color);">
+                                                Deficit Owed</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="leaderboardTop5Body">
+                                        <tr>
+                                            <td colspan="2" style="text-align: center; padding: 1rem;">Loading...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Bottom 5 Card -->
+                        <div
+                            style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h4 style="font-size: 1.1rem; font-weight: 600; color: #ef4444;"><i
+                                        class="fas fa-exclamation-triangle"></i> Bottom 5: Most Hours to Make Up</h4>
+                            </div>
+                            <div
+                                style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-primary);">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                                    <thead style="background: var(--bg-secondary); position: sticky; top: 0;">
+                                        <tr>
+                                            <th
+                                                style="padding: 0.5rem; text-align: left; border-bottom: 1px solid var(--border-color);">
+                                                Name</th>
+                                            <th
+                                                style="padding: 0.5rem; text-align: right; border-bottom: 1px solid var(--border-color);">
+                                                Deficit Owed</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="leaderboardBottom5Body">
+                                        <tr>
+                                            <td colspan="2" style="text-align: center; padding: 1rem;">Loading...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </main>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle-btn" id="themeToggleBtn" aria-label="Toggle Dark Mode">
+        <i class="fas fa-moon"></i>
+    </button>
 
     <!-- JavaScript -->
     <script>
@@ -289,6 +406,7 @@
                 // Load sign-ups after tutoring data is loaded
                 loadMySignups();
             });
+            loadLeaderboard();
         }
 
         // Update calendar display
@@ -339,9 +457,20 @@
                     dayElement.classList.add('today');
                 }
 
+                let sessionsHtml = '';
+                if (sessionsForDay.length > 0) {
+                    sessionsHtml = '<div style="margin-top: 4px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; max-height: 80px;">';
+                    sessionsForDay.forEach(s => {
+                        sessionsHtml += `<div style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; padding: 4px; font-size: 0.75rem; line-height: 1.2; text-align: left;">`;
+                        sessionsHtml += `<strong>${s.time}</strong>`;
+                        sessionsHtml += `</div>`;
+                    });
+                    sessionsHtml += '</div>';
+                }
+
                 dayElement.innerHTML = `
                     <div class="day-number">${day}</div>
-                    ${sessionsForDay.length > 0 ? `<div class="session-indicator">${sessionsForDay.length} session${sessionsForDay.length > 1 ? 's' : ''}</div>` : ''}
+                    ${sessionsHtml}
                 `;
 
                 if (sessionsForDay.length > 0) {
@@ -759,10 +888,21 @@
                     hoursToMakeUpElement.style.color = '#22c55e'; // Green for on track
                 }
 
+                document.getElementById('hoursToMakeUpWholeYear').textContent = stats.hoursToMakeUpWholeYear || 0;
+                const hoursToMakeUpWholeYearElement = document.getElementById('hoursToMakeUpWholeYear');
+                if (stats.hoursToMakeUpWholeYear > 0) {
+                    hoursToMakeUpWholeYearElement.style.color = '#ef4444';
+                } else {
+                    hoursToMakeUpWholeYearElement.style.color = '#22c55e';
+                }
+
             } catch (error) {
                 console.error('Error loading student stats:', error);
                 // Keep default values if error occurs
             }
+
+            // Also reload leaderboard when stats are refreshed
+            loadLeaderboard();
         }
 
         // Meeting Check-in
@@ -786,14 +926,116 @@
                     alert(result.message || 'Check-in failed.');
                 }
             } catch (error) {
-                console.error('Error checking in:', error);
-                alert('An error occurred. Please try again.');
+                console.error(error);
+                alert('Error processing check-in.');
             }
         });
+
+        // Theme toggling
+        const themeBtn = document.getElementById('themeToggleBtn');
+        if (themeBtn) {
+            if (localStorage.getItem('theme') === 'dark') {
+                themeBtn.innerHTML = '<i class="fas fa-sun"></i>';
+            }
+            themeBtn.addEventListener('click', () => {
+                const isDark = document.documentElement.hasAttribute('data-theme');
+                if (isDark) {
+                    document.documentElement.removeAttribute('data-theme');
+                    localStorage.setItem('theme', 'light');
+                    themeBtn.innerHTML = '<i class="fas fa-moon"></i>';
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                    themeBtn.innerHTML = '<i class="fas fa-sun"></i>';
+                }
+            });
+        }
+
+        // Leaderboard logic
+        async function loadLeaderboard() {
+            try {
+                const response = await fetch('/api/leaderboard');
+                const data = await response.json();
+
+                const top5Body = document.getElementById('leaderboardTop5Body');
+                const bottom5Body = document.getElementById('leaderboardBottom5Body');
+
+                if (data.top5 && data.top5.length > 0) {
+                    top5Body.innerHTML = data.top5.map(student => `
+                        <tr>
+                            <td style="padding: 0.5rem; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">${student.name}</td>
+                            <td style="padding: 0.5rem; border-bottom: 1px solid var(--border-color); text-align: right; font-weight: 600; color: ${student.hoursToMakeUp > 0 ? '#ef4444' : '#10b981'};">
+                                ${student.hoursToMakeUp}
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    top5Body.innerHTML = `<tr><td colspan="2" style="text-align: center; padding: 1rem; color: var(--text-secondary);">No data available</td></tr>`;
+                }
+
+                if (data.bottom5 && data.bottom5.length > 0) {
+                    bottom5Body.innerHTML = data.bottom5.map(student => `
+                        <tr>
+                            <td style="padding: 0.5rem; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">${student.name}</td>
+                            <td style="padding: 0.5rem; border-bottom: 1px solid var(--border-color); text-align: right; font-weight: 600; color: #ef4444;">
+                                ${student.hoursToMakeUp}
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    bottom5Body.innerHTML = `<tr><td colspan="2" style="text-align: center; padding: 1rem; color: var(--text-secondary);">No data available</td></tr>`;
+                }
+            } catch (error) {
+                console.error('Error loading leaderboard:', error);
+                document.getElementById('leaderboardTop5Body').innerHTML = `<tr><td colspan="2" style="text-align: center; color: red;">Error loading data</td></tr>`;
+                document.getElementById('leaderboardBottom5Body').innerHTML = `<tr><td colspan="2" style="text-align: center; color: red;">Error loading data</td></tr>`;
+            }
+        }
+
+        // Load monthly requirements
+        async function loadMonthlyRequirements() {
+            const container = document.getElementById('monthlyRequirementsContainer');
+            const loading = document.getElementById('monthlyRequirementsLoading');
+
+            try {
+                const response = await fetch('/api/monthly-requirements');
+                const data = await response.json();
+
+                if (data.success && data.requirements) {
+                    loading.style.display = 'none';
+                    container.style.display = 'grid';
+
+                    const monthOrder = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
+                    const penaltyStartIndex = monthOrder.indexOf(data.penaltyMonth);
+
+                    container.innerHTML = data.requirements.map(req => {
+                        const currentMonthIndex = monthOrder.indexOf(req.monthCode);
+                        const isPenaltyActive = penaltyStartIndex !== -1 && currentMonthIndex >= penaltyStartIndex;
+
+                        return `
+                            <div style="background: var(--bg-secondary); border: 1px solid ${isPenaltyActive ? '#fca5a5' : 'var(--border-color)'}; border-radius: 8px; padding: 1rem; text-align: center; position: relative; overflow: hidden;">
+                                ${isPenaltyActive ? '<div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: #ef4444;"></div>' : ''}
+                                <h4 style="margin: 0 0 0.5rem 0; color: var(--text-primary); font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">${req.monthName}</h4>
+                                <div style="font-size: 1.5rem; font-weight: bold; color: var(--text-primary); margin: 0.5rem 0;">
+                                    ${req.baseHours} <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-secondary);">hrs</span>
+                                </div>
+                                <div style="font-size: 0.85rem; color: ${isPenaltyActive ? '#ef4444' : 'var(--text-secondary)'}; background: var(--bg-primary); padding: 0.25rem; border-radius: 4px; margin-top: 0.5rem;">
+                                    ${isPenaltyActive ? '<i class="fas fa-exclamation-triangle"></i> ' : ''}Penalty: ${req.penaltyRate}x
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            } catch (error) {
+                console.error('Error loading monthly requirements:', error);
+                loading.innerHTML = '<span style="color: #ef4444;">Failed to load requirements</span>';
+            }
+        }
 
         // Initialize everything when page loads
         initializeCalendar();
         loadStudentStats();
+        loadMonthlyRequirements();
     </script>
 </body>
 
