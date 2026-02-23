@@ -1279,8 +1279,10 @@ function calculateStudentStats(student, adjustments, schedule, settings, current
     const academicMonths = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
 
     let debts = []; // Array of { srcMonth, type: 'base' | 'penalty', amount, rate }
+    let bankedHours = 0; // Store surplus hours
     let totalHoursTutoredSoFar = 0; // Track cumulative hours through current month only
     const now = new Date(); // To check if a month has passed yet
+    let monthlyBreakdown = []; // Track month-by-month stats for dashboard
 
     // Process each month to calculate required hours and penalties
     for (let i = 0; i < academicMonths.length; i++) {
@@ -1364,7 +1366,9 @@ function calculateStudentStats(student, adjustments, schedule, settings, current
         totalHoursTutoredSoFar += actualHours;
 
         // Pay off debts chronologically
-        let availableHoursToPay = actualHours;
+        let availableHoursToPay = actualHours + bankedHours;
+        let displayTutoredHours = availableHoursToPay; // Show banked + actual for this month
+
         for (let j = 0; j < debts.length; j++) {
           if (availableHoursToPay <= 0) break;
 
@@ -1379,8 +1383,26 @@ function calculateStudentStats(student, adjustments, schedule, settings, current
           }
         }
 
+        // Save remaining hours back to bank for future months
+        bankedHours = availableHoursToPay;
+
         // At the end of every PAST month, record the current total debt as `hoursToMakeUpSoFar`
         hoursToMakeUp = debts.reduce((sum, d) => sum + d.amount, 0);
+
+        monthlyBreakdown.push({
+          monthCode: month,
+          baseHours: studentReqs.baseHours,
+          penaltyRate: studentReqs.penaltyRate,
+          tutoredHours: displayTutoredHours
+        });
+      } else {
+        // Future month - actualHours is 0, but you might have bankedHours
+        monthlyBreakdown.push({
+          monthCode: month,
+          baseHours: studentReqs.baseHours,
+          penaltyRate: studentReqs.penaltyRate,
+          tutoredHours: bankedHours
+        });
       }
     }
 
@@ -1397,7 +1419,8 @@ function calculateStudentStats(student, adjustments, schedule, settings, current
     hoursTutoredThisYear: Math.round(hoursTutoredThisYear * 10) / 10,
     hoursToMakeUp: Math.round(hoursToMakeUp * 10) / 10,
     hoursToMakeUpSoFar: Math.round(hoursToMakeUp * 10) / 10,
-    hoursToMakeUpWholeYear: Math.round(hoursToMakeUpWholeYear * 10) / 10
+    hoursToMakeUpWholeYear: Math.round(hoursToMakeUpWholeYear * 10) / 10,
+    monthlyBreakdown: monthlyBreakdown // For dashboard UI
   };
 }
 
@@ -1406,10 +1429,9 @@ router.get('/monthly-requirements', isAuthenticated, async (req, res) => {
   try {
     const settings = await Settings.getSettings();
     const memberType = req.user.memberType || 'New';
-    const userName = `${req.user.firstName} ${req.user.lastName || ''}`.trim();
     const userId = req.user._id;
 
-    // Fetch schedule and adjustments to calculate actual tutored hours
+    // Fetch schedule and adjustments to calculate actual tutored hours using the helper
     let schedule = [];
     if (googleSheetsService.isConfigured()) {
       try {
@@ -1422,80 +1444,50 @@ router.get('/monthly-requirements', isAuthenticated, async (req, res) => {
       schedule = getFallbackSchedule();
     }
 
-    const allAdjustments = await HourAdjustment.find({ $or: [{ userId: userId }, { userId: null }] }).lean();
-
-    // Filter adjustments to only those applying to this user
-    const studentAdjustments = allAdjustments.filter(adj =>
-      (adj.userId && adj.userId.toString() === userId.toString()) ||
-      adj.userId === null
-    );
+    const adjustments = await HourAdjustment.find({ $or: [{ userId: userId }, { userId: null }] }).lean();
 
     const now = new Date();
     const currentMonth = now.getMonth() + 1;
     const currentYear = now.getFullYear();
 
-    let academicYear;
-    if (currentMonth >= 9) { // September or later - fall semester
-      academicYear = currentYear;
-    } else { // January to August - spring semester
-      academicYear = currentYear - 1;
-    }
+    const stats = calculateStudentStats(req.user, adjustments, schedule, settings, currentMonth, currentYear);
 
-    // We want to return the penaltyMonth and an array of objects for Sept-June
-    const academicMonths = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
     const monthNames = {
       '09': 'September', '10': 'October', '11': 'November', '12': 'December',
       '01': 'January', '02': 'February', '03': 'March', '04': 'April',
       '05': 'May', '06': 'June'
     };
 
-    const requirements = academicMonths.map(month => {
-      // 1. Calculate actual hours tutored for this month
-      let actualHours = 0;
-      let monthYear;
-      if (month === '09' || month === '10' || month === '11' || month === '12') {
-        monthYear = academicYear;
-      } else {
-        monthYear = academicYear + 1;
-      }
+    let requirements = [];
 
-      // Tally check-ins
-      schedule.forEach(session => {
-        const sessionDate = new Date(session.date);
-        const sessionMonth = String(sessionDate.getMonth() + 1).padStart(2, '0');
-        const sessionYear = sessionDate.getFullYear();
-
-        if (sessionMonth === month && sessionYear === monthYear) {
-          const userTutor = session.tutors?.find(tutor => tutor.name === userName);
-          if (userTutor && userTutor.checkedIn) {
-            actualHours += parseFloat(session.numHours) || 1;
-          }
-        }
+    // Check if the helper populated monthlyBreakdown (which only happens if standard years conditions met)
+    if (stats.monthlyBreakdown && stats.monthlyBreakdown.length > 0) {
+      requirements = stats.monthlyBreakdown.map(breakdown => ({
+        monthCode: breakdown.monthCode,
+        monthName: monthNames[breakdown.monthCode],
+        baseHours: breakdown.baseHours,
+        penaltyRate: breakdown.penaltyRate,
+        tutoredHours: breakdown.tutoredHours
+      }));
+    } else {
+      // Fallback completely if somehow we're outside a tracked academic year
+      const academicMonths = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
+      requirements = academicMonths.map(month => {
+        const monthReqs = settings.memberRequirements[month] || {
+          New: { baseHours: 2.5, penaltyRate: 0.5 },
+          Old: { baseHours: 1.0, penaltyRate: 0.5 },
+          Officer: { baseHours: 0, penaltyRate: 0 }
+        };
+        const studentReqs = monthReqs[memberType] || monthReqs['New'];
+        return {
+          monthCode: month,
+          monthName: monthNames[month],
+          baseHours: studentReqs.baseHours,
+          penaltyRate: studentReqs.penaltyRate,
+          tutoredHours: 0
+        };
       });
-
-      // Tally adjustments
-      const monthAdjustments = studentAdjustments
-        .filter(adj => adj.monthApplied === month && (!adj.academicYear || adj.academicYear === academicYear))
-        .reduce((sum, adj) => sum + adj.amount, 0);
-      actualHours += monthAdjustments;
-
-      // 2. Fetch Base Requirement config
-      const monthReqs = settings.memberRequirements[month] || {
-        New: { baseHours: 2.5, penaltyRate: 0.5 },
-        Old: { baseHours: 1.0, penaltyRate: 0.5 },
-        Officer: { baseHours: 0, penaltyRate: 0 }
-      };
-
-      const studentReqs = monthReqs[memberType] || monthReqs['New'];
-
-      return {
-        monthCode: month,
-        monthName: monthNames[month],
-        baseHours: studentReqs.baseHours,
-        penaltyRate: studentReqs.penaltyRate,
-        tutoredHours: actualHours
-      };
-    });
+    }
 
     res.json({
       success: true,
@@ -1630,9 +1622,9 @@ router.get('/leaderboard', isAuthenticated, async (req, res) => {
     const excludedStudentsEnv = process.env.LEADERBOARD_EXCLUDED_STUDENTS;
     const excludedStudents = excludedStudentsEnv
       ? excludedStudentsEnv
-          .split(',')
-          .map(name => name.trim().toLowerCase())
-          .filter(name => name.length > 0)
+        .split(',')
+        .map(name => name.trim().toLowerCase())
+        .filter(name => name.length > 0)
       : ["t g", "tanmay garg", "victor wodzien"];
     studentsStats = studentsStats.filter(stat => !excludedStudents.includes(stat.name.toLowerCase()));
 
