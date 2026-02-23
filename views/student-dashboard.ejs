@@ -457,21 +457,26 @@
                     dayElement.classList.add('today');
                 }
 
-                let sessionsHtml = '';
-                if (sessionsForDay.length > 0) {
-                    sessionsHtml = '<div style="margin-top: 4px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; max-height: 80px;">';
-                    sessionsForDay.forEach(s => {
-                        sessionsHtml += `<div style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; padding: 4px; font-size: 0.75rem; line-height: 1.2; text-align: left;">`;
-                        sessionsHtml += `<strong>${s.time}</strong>`;
-                        sessionsHtml += `</div>`;
-                    });
-                    sessionsHtml += '</div>';
-                }
+                const dayNumberElement = document.createElement('div');
+                dayNumberElement.className = 'day-number';
+                dayNumberElement.textContent = day;
+                dayElement.appendChild(dayNumberElement);
 
-                dayElement.innerHTML = `
-                    <div class="day-number">${day}</div>
-                    ${sessionsHtml}
-                `;
+                if (sessionsForDay.length > 0) {
+                    const sessionsContainer = document.createElement('div');
+                    sessionsContainer.setAttribute('style', 'margin-top: 4px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; max-height: 80px;');
+                    sessionsForDay.forEach(s => {
+                        const sessionBox = document.createElement('div');
+                        sessionBox.setAttribute('style', 'background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; padding: 4px; font-size: 0.75rem; line-height: 1.2; text-align: left;');
+
+                        const timeStrong = document.createElement('strong');
+                        timeStrong.textContent = s.time;
+                        sessionBox.appendChild(timeStrong);
+
+                        sessionsContainer.appendChild(sessionBox);
+                    });
+                    dayElement.appendChild(sessionsContainer);
+                }
 
                 if (sessionsForDay.length > 0) {
                     dayElement.classList.add('has-sessions');
@@ -504,42 +509,96 @@
 
             modalTitle.textContent = `Tutoring Sessions - ${dateString}`;
 
-            modalBody.innerHTML = sessions.map(session => {
+            modalBody.innerHTML = '';
+            sessions.forEach(session => {
                 const currentUserSignedUp = session.signedUpUsers.includes('<%= user.firstName %> <%= user.lastName || "" %>'.trim());
 
-                return `
-                <div class="session-card ${session.cancelled ? 'cancelled' : ''}">
-                    <div class="session-header">
-                        <span class="session-time">${session.time}</span>
-                        <span class="session-capacity">${session.signedUp || 0}/${session.maxTutors} tutors</span>
-                        ${session.cancelled ? '<span class="cancelled-badge">CANCELLED</span>' : ''}
-                    </div>
-                    <div class="session-body">
-                        <p class="session-room">Room: ${session.room || 'TBD'}</p>
-                        ${session.signedUpUsers && session.signedUpUsers.length > 0 ? `
-                            <div class="session-participants">
-                                <strong>Participants:</strong>
-                                ${session.signedUpUsers.map(user => `<span class="participant">${user}</span>`).join('')}
-                            </div>
-                        ` : '<p class="no-participants">No participants yet</p>'}
-                    </div>
-                    <div class="session-actions">
-                        ${currentUserSignedUp ?
-                        `<button class="signup-btn signed-up" onclick="cancelSessionSignup('${dateKey}', '${session.time}')">
-                                Cancel Signup
-                            </button>` :
-                        !session.cancelled && (session.signedUp || 0) < session.maxTutors ?
-                            `<button class="signup-btn available" onclick="signUpForSession('${dateKey}', '${session.time}')">
-                                    Sign Up
-                                </button>` :
-                            session.cancelled ?
-                                '<button class="signup-btn cancelled">Cancelled</button>' :
-                                '<button class="signup-btn full">Full</button>'
-                    }
-                    </div>
-                </div>
-            `;
-            }).join('');
+                const card = document.createElement('div');
+                card.className = `session-card ${session.cancelled ? 'cancelled' : ''}`;
+
+                const header = document.createElement('div');
+                header.className = 'session-header';
+
+                const timeSpan = document.createElement('span');
+                timeSpan.className = 'session-time';
+                timeSpan.textContent = session.time;
+                header.appendChild(timeSpan);
+
+                const capacitySpan = document.createElement('span');
+                capacitySpan.className = 'session-capacity';
+                capacitySpan.textContent = `${session.signedUp || 0}/${session.maxTutors} tutors`;
+                header.appendChild(capacitySpan);
+
+                if (session.cancelled) {
+                    const cancelledBadge = document.createElement('span');
+                    cancelledBadge.className = 'cancelled-badge';
+                    cancelledBadge.textContent = 'CANCELLED';
+                    header.appendChild(cancelledBadge);
+                }
+                card.appendChild(header);
+
+                const body = document.createElement('div');
+                body.className = 'session-body';
+
+                const roomP = document.createElement('p');
+                roomP.className = 'session-room';
+                roomP.textContent = `Room: ${session.room || 'TBD'}`;
+                body.appendChild(roomP);
+
+                if (session.signedUpUsers && session.signedUpUsers.length > 0) {
+                    const participantsDiv = document.createElement('div');
+                    participantsDiv.className = 'session-participants';
+
+                    const strong = document.createElement('strong');
+                    strong.textContent = 'Participants:';
+                    participantsDiv.appendChild(strong);
+
+                    session.signedUpUsers.forEach(user => {
+                        const userSpan = document.createElement('span');
+                        userSpan.className = 'participant';
+                        userSpan.textContent = user;
+                        participantsDiv.appendChild(userSpan);
+                    });
+
+                    body.appendChild(participantsDiv);
+                } else {
+                    const noParticipants = document.createElement('p');
+                    noParticipants.className = 'no-participants';
+                    noParticipants.textContent = 'No participants yet';
+                    body.appendChild(noParticipants);
+                }
+                card.appendChild(body);
+
+                const actions = document.createElement('div');
+                actions.className = 'session-actions';
+
+                if (currentUserSignedUp) {
+                    const cancelBtn = document.createElement('button');
+                    cancelBtn.className = 'signup-btn signed-up';
+                    cancelBtn.onclick = () => cancelSessionSignup(dateKey, session.time);
+                    cancelBtn.textContent = 'Cancel Signup';
+                    actions.appendChild(cancelBtn);
+                } else if (!session.cancelled && (session.signedUp || 0) < session.maxTutors) {
+                    const signupBtn = document.createElement('button');
+                    signupBtn.className = 'signup-btn available';
+                    signupBtn.onclick = () => signUpForSession(dateKey, session.time);
+                    signupBtn.textContent = 'Sign Up';
+                    actions.appendChild(signupBtn);
+                } else if (session.cancelled) {
+                    const cancelledBtn = document.createElement('button');
+                    cancelledBtn.className = 'signup-btn cancelled';
+                    cancelledBtn.textContent = 'Cancelled';
+                    actions.appendChild(cancelledBtn);
+                } else {
+                    const fullBtn = document.createElement('button');
+                    fullBtn.className = 'signup-btn full';
+                    fullBtn.textContent = 'Full';
+                    actions.appendChild(fullBtn);
+                }
+
+                card.appendChild(actions);
+                modalBody.appendChild(card);
+            });
 
             modal.style.display = 'flex';
         }
@@ -961,27 +1020,43 @@
                 const bottom5Body = document.getElementById('leaderboardBottom5Body');
 
                 if (data.top5 && data.top5.length > 0) {
-                    top5Body.innerHTML = data.top5.map(student => `
-                        <tr>
-                            <td style="padding: 0.5rem; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">${student.name}</td>
-                            <td style="padding: 0.5rem; border-bottom: 1px solid var(--border-color); text-align: right; font-weight: 600; color: ${student.hoursToMakeUp > 0 ? '#ef4444' : '#10b981'};">
-                                ${student.hoursToMakeUp}
-                            </td>
-                        </tr>
-                    `).join('');
+                    top5Body.innerHTML = '';
+                    data.top5.forEach(student => {
+                        const row = document.createElement('tr');
+
+                        const nameCell = document.createElement('td');
+                        nameCell.setAttribute('style', 'padding: 0.5rem; border-bottom: 1px solid var(--border-color); color: var(--text-primary);');
+                        nameCell.textContent = student.name;
+
+                        const hoursCell = document.createElement('td');
+                        hoursCell.setAttribute('style', `padding: 0.5rem; border-bottom: 1px solid var(--border-color); text-align: right; font-weight: 600; color: ${student.hoursToMakeUp > 0 ? '#ef4444' : '#10b981'};`);
+                        hoursCell.textContent = student.hoursToMakeUp;
+
+                        row.appendChild(nameCell);
+                        row.appendChild(hoursCell);
+                        top5Body.appendChild(row);
+                    });
                 } else {
                     top5Body.innerHTML = `<tr><td colspan="2" style="text-align: center; padding: 1rem; color: var(--text-secondary);">No data available</td></tr>`;
                 }
 
                 if (data.bottom5 && data.bottom5.length > 0) {
-                    bottom5Body.innerHTML = data.bottom5.map(student => `
-                        <tr>
-                            <td style="padding: 0.5rem; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">${student.name}</td>
-                            <td style="padding: 0.5rem; border-bottom: 1px solid var(--border-color); text-align: right; font-weight: 600; color: #ef4444;">
-                                ${student.hoursToMakeUp}
-                            </td>
-                        </tr>
-                    `).join('');
+                    bottom5Body.innerHTML = '';
+                    data.bottom5.forEach(student => {
+                        const row = document.createElement('tr');
+
+                        const nameCell = document.createElement('td');
+                        nameCell.setAttribute('style', 'padding: 0.5rem; border-bottom: 1px solid var(--border-color); color: var(--text-primary);');
+                        nameCell.textContent = student.name;
+
+                        const hoursCell = document.createElement('td');
+                        hoursCell.setAttribute('style', 'padding: 0.5rem; border-bottom: 1px solid var(--border-color); text-align: right; font-weight: 600; color: #ef4444;');
+                        hoursCell.textContent = student.hoursToMakeUp;
+
+                        row.appendChild(nameCell);
+                        row.appendChild(hoursCell);
+                        bottom5Body.appendChild(row);
+                    });
                 } else {
                     bottom5Body.innerHTML = `<tr><td colspan="2" style="text-align: center; padding: 1rem; color: var(--text-secondary);">No data available</td></tr>`;
                 }
@@ -1016,10 +1091,22 @@
                             <div style="background: var(--bg-secondary); border: 1px solid ${isPenaltyActive ? '#fca5a5' : 'var(--border-color)'}; border-radius: 8px; padding: 1rem; text-align: center; position: relative; overflow: hidden;">
                                 ${isPenaltyActive ? '<div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: #ef4444;"></div>' : ''}
                                 <h4 style="margin: 0 0 0.5rem 0; color: var(--text-primary); font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">${req.monthName}</h4>
-                                <div style="font-size: 1.5rem; font-weight: bold; color: var(--text-primary); margin: 0.5rem 0;">
-                                    ${req.baseHours} <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-secondary);">hrs</span>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.75rem;">
+                                    <div style="text-align: left;">
+                                        <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Base Req</div>
+                                        <div style="font-size: 1.2rem; font-weight: bold; color: var(--text-primary);">
+                                            ${req.baseHours}<span style="font-size: 0.75rem; font-weight: normal; color: var(--text-secondary);">hr</span>
+                                        </div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Tutored</div>
+                                        <div style="font-size: 1.2rem; font-weight: bold; color: ${req.tutoredHours >= req.baseHours ? '#10b981' : 'var(--text-primary)'};">
+                                            ${req.tutoredHours}<span style="font-size: 0.75rem; font-weight: normal; color: var(--text-secondary);">hr</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div style="font-size: 0.85rem; color: ${isPenaltyActive ? '#ef4444' : 'var(--text-secondary)'}; background: var(--bg-primary); padding: 0.25rem; border-radius: 4px; margin-top: 0.5rem;">
+                                
+                                <div style="font-size: 0.85rem; color: ${isPenaltyActive ? '#ef4444' : 'var(--text-secondary)'}; background: var(--bg-primary); padding: 0.25rem; border-radius: 4px; margin-top: 0.75rem;">
                                     ${isPenaltyActive ? '<i class="fas fa-exclamation-triangle"></i> ' : ''}Penalty: ${req.penaltyRate}x
                                 </div>
                             </div>

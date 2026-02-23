@@ -984,14 +984,24 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
       });
 
       // Apply adjustments to monthly hours
+      const currentYear = new Date().getFullYear();
+      const currentMonth = new Date().getMonth() + 1;
+      let academicYear;
+      if (currentMonth >= 9) {
+        academicYear = currentYear;
+      } else {
+        academicYear = currentYear - 1;
+      }
+
       studentAdjustments.forEach(adj => {
-        if (monthlyHours[adj.monthApplied] !== undefined) {
+        if (monthlyHours[adj.monthApplied] !== undefined && (!adj.academicYear || adj.academicYear === academicYear)) {
           monthlyHours[adj.monthApplied] += adj.amount;
         }
       });
 
       // Calculate requirements for each month with penalty system
       let cumulativeMissedHours = 0;
+      let penaltyEligibleMissedHours = 0;
 
       for (const month of academicMonths) {
 
@@ -1004,16 +1014,6 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
         const studentReqs = monthReqs[memberType] || monthReqs['New'];
 
         let requiredForMonth = studentReqs.baseHours;
-        // September typically has lower/different requirements or no penalty start yet?
-        // Logic from before: Sep = 2, Oct+ = 2.5 (for New). 
-        // We should stick to the settings, but if there's a specific "September exception" logic 
-        // that isn't in settings, we might need to keep it or adapt settings.
-        // The user prompted "penalty changes" and "hour tracker (formula)". 
-        // The implementation plan said: "Replace hardcoded hour requirements (2.0/2.5) with settings.memberRequirements[memberType].baseHours."
-
-        // HOWEVER, the previous code had a hardcoded exception for September (2.0 vs 2.5). 
-        // If the settings don't support per-month base hours, we use the global baseHours.
-        // Let's assume the Settings.memberRequirements.baseHours applies to standard months.
 
         // Check strictly for penalty month
         const monthOrder = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
@@ -1021,8 +1021,8 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
         const currentMonthIndex = monthOrder.indexOf(month);
 
         // Add penalty if applicable
-        if (cumulativeMissedHours > 0 && penaltyStartIndex !== -1 && currentMonthIndex >= penaltyStartIndex) {
-          let penalty = cumulativeMissedHours * studentReqs.penaltyRate;
+        if (penaltyEligibleMissedHours > 0 && penaltyStartIndex !== -1 && currentMonthIndex >= penaltyStartIndex) {
+          let penalty = penaltyEligibleMissedHours * studentReqs.penaltyRate;
           // Round down to nearest 0.5
           penalty = Math.floor(penalty * 2) / 2;
           requiredForMonth += penalty;
@@ -1034,14 +1034,10 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
         const actualHours = monthlyHours[month] || 0;
         const missedThisMonth = Math.max(0, requiredForMonth - actualHours);
 
-        // Only accumulate missed hours if we haven't hit the end of the year or similar logic?
-        // Previous logic: "Only add to penalty calculation if not September" 
-        // -> This implies a "grace period". 
-        // If settings.penaltyMonth is '10', then missed hours in '09' should definitely count towards '10' penalty?
-        // Or does it mean *penalties* don't apply in Sep, but missed hours *accumulate*?
-        // "Missing hours from October onwards increase future requirements" - this suggests accumulated missed hours start mattering then.
-
         cumulativeMissedHours += missedThisMonth;
+        if (month !== '09') {
+          penaltyEligibleMissedHours += missedThisMonth;
+        }
       }
 
       return {
@@ -1125,14 +1121,24 @@ async function getStudentHoursFromDatabase(students, res) {
       });
 
       // Apply adjustments
+      const currentYearDb = new Date().getFullYear();
+      const currentMonthDb = new Date().getMonth() + 1;
+      let academicYearDb;
+      if (currentMonthDb >= 9) {
+        academicYearDb = currentYearDb;
+      } else {
+        academicYearDb = currentYearDb - 1;
+      }
+
       studentAdjustments.forEach(adj => {
-        if (monthlyHours[adj.monthApplied] !== undefined) {
+        if (monthlyHours[adj.monthApplied] !== undefined && (!adj.academicYear || adj.academicYear === academicYearDb)) {
           monthlyHours[adj.monthApplied] += adj.amount;
         }
       });
 
       // Calculate requirements for each month with penalty system
       let cumulativeMissedHours = 0;
+      let penaltyEligibleMissedHours = 0;
 
       for (const month of academicMonths) {
 
@@ -1150,8 +1156,8 @@ async function getStudentHoursFromDatabase(students, res) {
         const currentMonthIndex = monthOrder.indexOf(month);
 
         // Add penalty if applicable
-        if (cumulativeMissedHours > 0 && penaltyStartIndex !== -1 && currentMonthIndex >= penaltyStartIndex) {
-          let penalty = cumulativeMissedHours * studentReqs.penaltyRate;
+        if (penaltyEligibleMissedHours > 0 && penaltyStartIndex !== -1 && currentMonthIndex >= penaltyStartIndex) {
+          let penalty = penaltyEligibleMissedHours * studentReqs.penaltyRate;
           // Round down to nearest 0.5
           penalty = Math.floor(penalty * 2) / 2;
           requiredForMonth += penalty;
@@ -1164,6 +1170,14 @@ async function getStudentHoursFromDatabase(students, res) {
         const missedThisMonth = Math.max(0, requiredForMonth - actualHours);
 
         cumulativeMissedHours += missedThisMonth;
+
+        // Non-accumulating penalty: Only track the MOST RECENT month's missed hours
+        // for penalty application in the NEXT month.
+        if (month !== '09') {
+          penaltyEligibleMissedHours = missedThisMonth;
+        } else {
+          penaltyEligibleMissedHours = missedThisMonth;
+        }
       }
 
       return {
@@ -1197,11 +1211,14 @@ function calculateStudentStats(student, adjustments, schedule, settings, current
 
   // Calculate adjustments totals
   const currentMonthStr = String(currentMonth).padStart(2, '0');
+  const academicYearCalc = currentMonth >= 9 ? currentYear : currentYear - 1;
   const currentMonthAdjustments = studentAdjustments
-    .filter(adj => adj.monthApplied === currentMonthStr && adj.academicYear === (currentMonth >= 9 ? currentYear : currentYear - 1))
+    .filter(adj => adj.monthApplied === currentMonthStr && (!adj.academicYear || adj.academicYear === academicYearCalc))
     .reduce((sum, adj) => sum + adj.amount, 0);
 
-  const yearAdjustments = studentAdjustments.reduce((sum, adj) => sum + adj.amount, 0);
+  const yearAdjustments = studentAdjustments
+    .filter(adj => !adj.academicYear || adj.academicYear === academicYearCalc)
+    .reduce((sum, adj) => sum + adj.amount, 0);
 
   // Apply adjustments to stats
   hoursTutoredThisMonth += currentMonthAdjustments;
@@ -1267,9 +1284,10 @@ function calculateStudentStats(student, adjustments, schedule, settings, current
 
     // Get all monthly hours for academic year (Sep to June)
     const academicMonths = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
-    let totalMissedHours = 0;
-    let totalRequiredHours = 0;
+
+    let debts = []; // Array of { srcMonth, type: 'base' | 'penalty', amount, rate }
     let totalHoursTutoredSoFar = 0; // Track cumulative hours through current month only
+    const now = new Date(); // To check if a month has passed yet
 
     // Process each month to calculate required hours and penalties
     for (let i = 0; i < academicMonths.length; i++) {
@@ -1284,117 +1302,98 @@ function calculateStudentStats(student, adjustments, schedule, settings, current
         monthYear = academicYear + 1; // Spring semester (next calendar year)
       }
 
-      // Only process months that have passed
       const monthDate = new Date(monthYear, parseInt(month) - 1, 1);
-      const now = new Date();
-      if (monthDate > now) {
-        break; // Haven't reached this month yet
-      }
+      const isPastMonth = monthDate <= now;
 
-      // Get actual hours tutored for this month
-      schedule.forEach(session => {
-        const sessionDate = new Date(session.date);
-        const sessionMonth = String(sessionDate.getMonth() + 1).padStart(2, '0');
-        const sessionYear = sessionDate.getFullYear();
+      // 1. Determine penalty for this month based on LAST MONTH'S unpaid base debt
+      let currentMonthPenalty = 0;
+      if (i > 0) {
+        const lastMonth = academicMonths[i - 1];
+        const unpaidLastMonthBase = debts.find(d => d.srcMonth === lastMonth && d.type === 'base');
 
-        if (sessionMonth === month && sessionYear === monthYear) {
-          const userTutor = session.tutors.find(tutor => tutor.name === userName);
-          if (userTutor && userTutor.checkedIn) {
-            actualHours += parseFloat(session.numHours) || 1;
+        const monthOrder = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
+        const penaltyStartIndex = monthOrder.indexOf(settings.penaltyMonth);
+        const currentMonthIndex = monthOrder.indexOf(month);
+
+        if (unpaidLastMonthBase && unpaidLastMonthBase.amount > 0 && penaltyStartIndex !== -1 && currentMonthIndex >= penaltyStartIndex) {
+          currentMonthPenalty = unpaidLastMonthBase.amount * unpaidLastMonthBase.rate;
+          currentMonthPenalty = Math.floor(currentMonthPenalty * 2) / 2;
+
+          if (currentMonthPenalty > 0) {
+            debts.push({
+              srcMonth: month,
+              type: 'penalty',
+              amount: currentMonthPenalty,
+              rate: 0
+            });
           }
         }
+      }
+
+      // 2. Get this month's base requirement
+      const monthReqs = settings.memberRequirements[month] || {
+        New: { baseHours: 2.5, penaltyRate: 0.5 },
+        Old: { baseHours: 1.0, penaltyRate: 0.5 },
+        Officer: { baseHours: 0, penaltyRate: 0 }
+      };
+      const studentReqs = monthReqs[memberType] || monthReqs['New'];
+
+      debts.push({
+        srcMonth: month,
+        type: 'base',
+        amount: studentReqs.baseHours,
+        rate: studentReqs.penaltyRate
       });
 
-      // Apply adjustments
-      const monthAdjustments = studentAdjustments
-        .filter(adj => adj.monthApplied === month)
-        .reduce((sum, adj) => sum + adj.amount, 0);
-      actualHours += monthAdjustments;
+      // 3. Apply this month's tutored hours (if it has actually passed)
+      if (isPastMonth) {
+        // Get actual hours tutored for this month
+        schedule.forEach(session => {
+          const sessionDate = new Date(session.date);
+          const sessionMonth = String(sessionDate.getMonth() + 1).padStart(2, '0');
+          const sessionYear = sessionDate.getFullYear();
 
-      // Accumulate hours tutored so far (through current month only)
-      totalHoursTutoredSoFar += actualHours;
+          if (sessionMonth === month && sessionYear === monthYear) {
+            const userTutor = session.tutors.find(tutor => tutor.name === userName);
+            if (userTutor && userTutor.checkedIn) {
+              actualHours += parseFloat(session.numHours) || 1;
+            }
+          }
+        });
 
-      // Calculate required hours for this month
-      const monthReqs = settings.memberRequirements[month] || {
-        New: { baseHours: 2.5, penaltyRate: 0.5 },
-        Old: { baseHours: 1.0, penaltyRate: 0.5 },
-        Officer: { baseHours: 0, penaltyRate: 0 }
-      };
-      const studentReqs = monthReqs[memberType] || monthReqs['New'];
+        // Apply adjustments
+        const monthAdjustments = studentAdjustments
+          .filter(adj => adj.monthApplied === month && (!adj.academicYear || adj.academicYear === academicYear))
+          .reduce((sum, adj) => sum + adj.amount, 0);
+        actualHours += monthAdjustments;
 
-      let requiredForMonth = studentReqs.baseHours;
+        // Accumulate hours tutored so far (through current month only)
+        totalHoursTutoredSoFar += actualHours;
 
-      const monthOrder = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
-      const penaltyStartIndex = monthOrder.indexOf(settings.penaltyMonth);
-      const currentMonthIndex = monthOrder.indexOf(month);
+        // Pay off debts chronologically
+        let availableHoursToPay = actualHours;
+        for (let j = 0; j < debts.length; j++) {
+          if (availableHoursToPay <= 0) break;
 
-      if (totalMissedHours > 0 && penaltyStartIndex !== -1 && currentMonthIndex >= penaltyStartIndex) {
-        let penalty = totalMissedHours * studentReqs.penaltyRate;
-        penalty = Math.floor(penalty * 2) / 2;
-        requiredForMonth += penalty;
+          if (debts[j].amount > 0) {
+            if (availableHoursToPay >= debts[j].amount) {
+              availableHoursToPay -= debts[j].amount;
+              debts[j].amount = 0; // Fully paid
+            } else {
+              debts[j].amount -= availableHoursToPay;
+              availableHoursToPay = 0; // Exhausted
+            }
+          }
+        }
+
+        // At the end of every PAST month, record the current total debt as `hoursToMakeUpSoFar`
+        hoursToMakeUp = debts.reduce((sum, d) => sum + d.amount, 0);
       }
-
-      totalRequiredHours += requiredForMonth;
-
-      // Calculate missed hours for this month to carry forward
-      const missedThisMonth = Math.max(0, requiredForMonth - actualHours);
-      totalMissedHours += missedThisMonth;
     }
 
-    // Calculate hours to make up so far (current month deficit)
-    const hoursToMakeUpSoFar = Math.max(0, totalRequiredHours - totalHoursTutoredSoFar);
-
-    // Calculate projected hours to make up for whole year
-    let totalRequiredWholeYear = totalRequiredHours;
-    let projectedMissedHours = totalMissedHours;
-
-    for (let i = 0; i < academicMonths.length; i++) {
-      const month = academicMonths[i];
-      let monthYear;
-      if (month === '09' || month === '10' || month === '11' || month === '12') {
-        monthYear = academicYear;
-      } else {
-        monthYear = academicYear + 1;
-      }
-
-      const monthDate = new Date(monthYear, parseInt(month) - 1, 1);
-      const now = new Date();
-
-      // Only process future months
-      if (monthDate <= now) {
-        continue;
-      }
-
-      // Calculate required hours for future months
-      const monthReqs = settings.memberRequirements[month] || {
-        New: { baseHours: 2.5, penaltyRate: 0.5 },
-        Old: { baseHours: 1.0, penaltyRate: 0.5 },
-        Officer: { baseHours: 0, penaltyRate: 0 }
-      };
-      const studentReqs = monthReqs[memberType] || monthReqs['New'];
-
-      let requiredForMonth = studentReqs.baseHours;
-
-      const monthOrder = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
-      const penaltyStartIndex = monthOrder.indexOf(settings.penaltyMonth);
-      const currentMonthIndex = monthOrder.indexOf(month);
-
-      if (projectedMissedHours > 0 && penaltyStartIndex !== -1 && currentMonthIndex >= penaltyStartIndex) {
-        let penalty = projectedMissedHours * studentReqs.penaltyRate;
-        penalty = Math.floor(penalty * 2) / 2;
-        requiredForMonth += penalty;
-      }
-
-      totalRequiredWholeYear += requiredForMonth;
-
-      // Assume they won't tutor in future months for projection
-      const missedThisMonth = requiredForMonth;
-      projectedMissedHours += missedThisMonth;
-    }
-
-    hoursToMakeUpWholeYear = Math.max(0, totalRequiredWholeYear - totalHoursTutoredSoFar);
-
-    hoursToMakeUp = hoursToMakeUpSoFar; // Keep for backwards compatibility
+    // After projecting out through the end of the year (June), grab the final debt as `hoursToMakeUpWholeYear`
+    // (Notice that future months add requirements to `debts` but don't add any actualHours, simulating 0 tutored)
+    hoursToMakeUpWholeYear = debts.reduce((sum, d) => sum + d.amount, 0);
   }
 
   return {
@@ -1409,11 +1408,45 @@ function calculateStudentStats(student, adjustments, schedule, settings, current
   };
 }
 
-// Get monthly requirements for the student's member type
+// Get monthly requirements and actual tutored hours for the student's member type
 router.get('/monthly-requirements', isAuthenticated, async (req, res) => {
   try {
     const settings = await Settings.getSettings();
     const memberType = req.user.memberType || 'New';
+    const userName = `${req.user.firstName} ${req.user.lastName || ''}`.trim();
+    const userId = req.user._id;
+
+    // Fetch schedule and adjustments to calculate actual tutored hours
+    let schedule = [];
+    if (googleSheetsService.isConfigured()) {
+      try {
+        schedule = await googleSheetsService.getTutoringSchedule();
+      } catch (sheetsError) {
+        console.warn('Google Sheets not available, using fallback data:', sheetsError.message);
+        schedule = getFallbackSchedule();
+      }
+    } else {
+      schedule = getFallbackSchedule();
+    }
+
+    const allAdjustments = await HourAdjustment.find({ $or: [{ userId: userId }, { userId: null }] }).lean();
+
+    // Filter adjustments to only those applying to this user
+    const studentAdjustments = allAdjustments.filter(adj =>
+      (adj.userId && adj.userId.toString() === userId.toString()) ||
+      adj.userId === null
+    );
+
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+
+    let academicYear;
+    if (currentMonth >= 9) { // September or later - fall semester
+      academicYear = currentYear;
+    } else { // January to August - spring semester
+      academicYear = currentYear - 1;
+    }
 
     // We want to return the penaltyMonth and an array of objects for Sept-June
     const academicMonths = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
@@ -1424,6 +1457,36 @@ router.get('/monthly-requirements', isAuthenticated, async (req, res) => {
     };
 
     const requirements = academicMonths.map(month => {
+      // 1. Calculate actual hours tutored for this month
+      let actualHours = 0;
+      let monthYear;
+      if (month === '09' || month === '10' || month === '11' || month === '12') {
+        monthYear = academicYear;
+      } else {
+        monthYear = academicYear + 1;
+      }
+
+      // Tally check-ins
+      schedule.forEach(session => {
+        const sessionDate = new Date(session.date);
+        const sessionMonth = String(sessionDate.getMonth() + 1).padStart(2, '0');
+        const sessionYear = sessionDate.getFullYear();
+
+        if (sessionMonth === month && sessionYear === monthYear) {
+          const userTutor = session.tutors?.find(tutor => tutor.name === userName);
+          if (userTutor && userTutor.checkedIn) {
+            actualHours += parseFloat(session.numHours) || 1;
+          }
+        }
+      });
+
+      // Tally adjustments
+      const monthAdjustments = studentAdjustments
+        .filter(adj => adj.monthApplied === month && (!adj.academicYear || adj.academicYear === academicYear))
+        .reduce((sum, adj) => sum + adj.amount, 0);
+      actualHours += monthAdjustments;
+
+      // 2. Fetch Base Requirement config
       const monthReqs = settings.memberRequirements[month] || {
         New: { baseHours: 2.5, penaltyRate: 0.5 },
         Old: { baseHours: 1.0, penaltyRate: 0.5 },
@@ -1436,7 +1499,8 @@ router.get('/monthly-requirements', isAuthenticated, async (req, res) => {
         monthCode: month,
         monthName: monthNames[month],
         baseHours: studentReqs.baseHours,
-        penaltyRate: studentReqs.penaltyRate
+        penaltyRate: studentReqs.penaltyRate,
+        tutoredHours: actualHours
       };
     });
 
@@ -1773,13 +1837,17 @@ router.get('/leaderboard', isAuthenticated, async (req, res) => {
 
     // Calculate statistics for each student using our helper
     // We only care about hoursToMakeUp for the leaderboard
-    const studentsStats = students.map(student => {
+    let studentsStats = students.map(student => {
       const stats = calculateStudentStats(student, adjustments, schedule, settings, currentMonth, currentYear);
       return {
         name: `${stats.firstName} ${stats.lastName}`.trim(),
         hoursToMakeUp: stats.hoursToMakeUp
       };
     });
+
+    // Exclude specific students from the leaderboard per user request
+    const excludedStudents = ["t g", "tanmay garg", "victor wodzien"];
+    studentsStats = studentsStats.filter(stat => !excludedStudents.includes(stat.name.toLowerCase()));
 
     // Sort students by highest hours To Make Up (descending)
     studentsStats.sort((a, b) => b.hoursToMakeUp - a.hoursToMakeUp);
