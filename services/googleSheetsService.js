@@ -10,9 +10,10 @@ class GoogleSheetsService {
   }
 
   isConfigured() {
-    const hasServiceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY && process.env.GOOGLE_SHEETS_ID;
-    const hasIndividualCreds = process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY && process.env.SPREADSHEET_ID;
-    return Boolean(hasServiceAccountJson || hasIndividualCreds);
+    const hasSpreadsheetId = Boolean(this.spreadsheetId);
+    const hasServiceAccountJson = Boolean(process.env.GOOGLE_SERVICE_ACCOUNT_KEY) && hasSpreadsheetId;
+    const hasIndividualCreds = Boolean(process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY) && hasSpreadsheetId;
+    return hasServiceAccountJson || hasIndividualCreds;
   }
 
   async initialize() {
