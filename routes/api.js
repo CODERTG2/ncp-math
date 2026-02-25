@@ -1000,7 +1000,6 @@ router.get('/student-hours', isAuthenticated, async (req, res) => {
       });
 
       // Calculate requirements for each month with penalty system
-      let cumulativeMissedHours = 0;
       let penaltyEligibleMissedHours = 0;
 
       for (const month of academicMonths) {
@@ -1134,7 +1133,6 @@ async function getStudentHoursFromDatabase(students, res) {
       });
 
       // Calculate requirements for each month with penalty system
-      let cumulativeMissedHours = 0;
       let penaltyEligibleMissedHours = 0;
 
       for (const month of academicMonths) {
@@ -1223,7 +1221,7 @@ function calculateStudentStats(student, adjustments, schedule, settings, current
     const sessionYear = sessionDate.getFullYear();
 
     // Find if user is in this session
-    const userTutor = session.tutors.find(tutor => tutor.name === userName);
+    const userTutor = (session.tutors || []).find(tutor => tutor.name === userName);
 
     if (userTutor) {
       const sessionHours = parseFloat(session.numHours) || 1; // Default to 1 hour if not specified
@@ -1265,6 +1263,7 @@ function calculateStudentStats(student, adjustments, schedule, settings, current
   // The logic here should match student-stats
   // Initialize whole year projection
   let hoursToMakeUpWholeYear = 0;
+  let monthlyBreakdown = []; // Track month-by-month stats for dashboard
 
   if (currentYear > 2025 || (currentYear === 2025 && currentMonth >= 9)) {
     // Determine current academic year first
@@ -1282,7 +1281,6 @@ function calculateStudentStats(student, adjustments, schedule, settings, current
     let bankedHours = 0; // Store surplus hours
     let totalHoursTutoredSoFar = 0; // Track cumulative hours through current month only
     const now = new Date(); // To check if a month has passed yet
-    let monthlyBreakdown = []; // Track month-by-month stats for dashboard
 
     // Process each month to calculate required hours and penalties
     for (let i = 0; i < academicMonths.length; i++) {
@@ -1349,7 +1347,7 @@ function calculateStudentStats(student, adjustments, schedule, settings, current
           const sessionYear = sessionDate.getFullYear();
 
           if (sessionMonth === month && sessionYear === monthYear) {
-            const userTutor = session.tutors.find(tutor => tutor.name === userName);
+            const userTutor = (session.tutors || []).find(tutor => tutor.name === userName);
             if (userTutor && userTutor.checkedIn) {
               actualHours += parseFloat(session.numHours) || 1;
             }
@@ -1514,7 +1512,6 @@ router.get('/student-stats', isAuthenticated, async (req, res) => {
       });
     }
 
-    const userName = `${req.user.firstName} ${req.user.lastName || ''}`.trim();
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth() + 1; // 1-12
     const currentYear = currentDate.getFullYear();
