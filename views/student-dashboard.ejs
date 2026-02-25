@@ -158,7 +158,7 @@
             <div class="auth-card" style="margin-top: 2rem;">
                 <div class="auth-body">
                     <div
-                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #e5e7eb;">
+                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #e5e7eb; flex-wrap: wrap; gap: 1rem;">
                         <h3
                             style="margin: 0; display: flex; align-items: center; gap: 0.75rem; font-size: 1.25rem; color: #1f2937;">
                             <div
@@ -167,25 +167,46 @@
                             </div>
                             My Upcoming Sessions
                         </h3>
-                        <button id="refreshSignups" style="
-                            background: linear-gradient(135deg, #3b82f6, #2563eb);
-                            color: white;
-                            border: none;
-                            padding: 0.5rem 1rem;
-                            border-radius: 8px;
-                            font-size: 0.875rem;
-                            font-weight: 500;
-                            cursor: pointer;
-                            transition: all 0.2s ease;
-                            display: flex;
-                            align-items: center;
-                            gap: 0.5rem;
-                            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
-                        " onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(59, 130, 246, 0.4)'"
-                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(59, 130, 246, 0.3)'">
-                            <i class="fas fa-sync-alt"></i>
-                            Refresh
-                        </button>
+                        <div style="display: flex; gap: 0.75rem;">
+                            <button onclick="window.location.href='/check-in'" style="
+                                background: linear-gradient(135deg, #10b981, #059669);
+                                color: white;
+                                border: none;
+                                padding: 0.5rem 1rem;
+                                border-radius: 8px;
+                                font-size: 0.875rem;
+                                font-weight: 500;
+                                cursor: pointer;
+                                transition: all 0.2s ease;
+                                display: flex;
+                                align-items: center;
+                                gap: 0.5rem;
+                                box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+                            " onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(16, 185, 129, 0.4)'"
+                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(16, 185, 129, 0.3)'">
+                                <i class="fas fa-clipboard-check"></i>
+                                Session Check-In
+                            </button>
+                            <button id="refreshSignups" style="
+                                background: linear-gradient(135deg, #3b82f6, #2563eb);
+                                color: white;
+                                border: none;
+                                padding: 0.5rem 1rem;
+                                border-radius: 8px;
+                                font-size: 0.875rem;
+                                font-weight: 500;
+                                cursor: pointer;
+                                transition: all 0.2s ease;
+                                display: flex;
+                                align-items: center;
+                                gap: 0.5rem;
+                                box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+                            " onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(59, 130, 246, 0.4)'"
+                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(59, 130, 246, 0.3)'">
+                                <i class="fas fa-sync-alt"></i>
+                                Refresh
+                            </button>
+                        </div>
                     </div>
                     <div id="mySignupsContainer">
                         <div id="signupsLoading" class="modern-loading" style="text-align: center; padding: 2rem;">
@@ -313,7 +334,7 @@
                             <div
                                 style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                                 <h4 style="font-size: 1.1rem; font-weight: 600; color: #10b981;"><i
-                                        class="fas fa-medal"></i> Top 5: Least Hours to Make Up</h4>
+                                        class="fas fa-medal"></i> Top 5: Most Hours Tutored</h4>
                             </div>
                             <div
                                 style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-primary);">
@@ -325,7 +346,7 @@
                                                 Name</th>
                                             <th
                                                 style="padding: 0.5rem; text-align: right; border-bottom: 1px solid var(--border-color);">
-                                                Deficit Owed</th>
+                                                Total Tutored</th>
                                         </tr>
                                     </thead>
                                     <tbody id="leaderboardTop5Body">
@@ -1029,8 +1050,8 @@
                         nameCell.textContent = student.name;
 
                         const hoursCell = document.createElement('td');
-                        hoursCell.setAttribute('style', `padding: 0.5rem; border-bottom: 1px solid var(--border-color); text-align: right; font-weight: 600; color: ${student.hoursToMakeUp > 0 ? '#ef4444' : '#10b981'};`);
-                        hoursCell.textContent = student.hoursToMakeUp;
+                        hoursCell.setAttribute('style', `padding: 0.5rem; border-bottom: 1px solid var(--border-color); text-align: right; font-weight: 600; color: #10b981;`);
+                        hoursCell.textContent = student.hoursTutoredThisYear;
 
                         row.appendChild(nameCell);
                         row.appendChild(hoursCell);

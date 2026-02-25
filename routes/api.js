@@ -1610,7 +1610,8 @@ router.get('/leaderboard', isAuthenticated, async (req, res) => {
       const stats = calculateStudentStats(student, adjustments, schedule, settings, currentMonth, currentYear);
       return {
         name: `${stats.firstName} ${stats.lastName}`.trim(),
-        hoursToMakeUp: stats.hoursToMakeUp
+        hoursToMakeUp: stats.hoursToMakeUp,
+        hoursTutoredThisYear: stats.hoursTutoredThisYear
       };
     });
 
@@ -1625,18 +1626,13 @@ router.get('/leaderboard', isAuthenticated, async (req, res) => {
       : ["t g", "tanmay garg", "victor wodzien"];
     studentsStats = studentsStats.filter(stat => !excludedStudents.includes(stat.name.toLowerCase()));
 
-    // Sort students by highest hours To Make Up (descending)
-    studentsStats.sort((a, b) => b.hoursToMakeUp - a.hoursToMakeUp);
-
-    // Filter out students who don't have any hours to make up, if you only want people who actually owe hours
-    // But typically leaderboard might just show bottom absolute
-
     // Bottom 5 (Most hours to make up)
-    const bottom5 = studentsStats.slice(0, 5);
+    const makeUpSorted = [...studentsStats].sort((a, b) => b.hoursToMakeUp - a.hoursToMakeUp);
+    const bottom5 = makeUpSorted.slice(0, 5);
 
-    // Top 5 (Least hours to make up - meaning lowest hoursToMakeUp, or even negative if they overperformed, though our logic caps at 0)
-    // We take the last 5 elements and reverse them so the very best student is at index 0.
-    const top5 = studentsStats.slice(-5).reverse();
+    // Top 5 (Most hours tutored overall)
+    const tutoredSorted = [...studentsStats].sort((a, b) => b.hoursTutoredThisYear - a.hoursTutoredThisYear);
+    const top5 = tutoredSorted.slice(0, 5);
 
     res.json({ top5, bottom5 });
 
