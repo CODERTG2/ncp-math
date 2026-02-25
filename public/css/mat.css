@@ -2504,7 +2504,7 @@
   background: linear-gradient(135deg, #f1f5f9, #cbd5e1);
   position: sticky;
   left: 0;
-  z-index: 11;
+  z-index: 30 !important;
   min-width: 200px;
 }
 
@@ -2545,8 +2545,9 @@
   background: #f8fafc;
   position: sticky;
   left: 0;
-  z-index: 9;
+  z-index: 20 !important;
   border-right: 2px solid #e5e7eb;
+  min-width: 200px;
 }
 
 .hours-cell,
