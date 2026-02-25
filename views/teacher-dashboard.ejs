@@ -439,7 +439,7 @@
                         <div
                             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                             <h4 style="font-size: 1.1rem; font-weight: 600; color: #10b981;"><i
-                                    class="fas fa-medal"></i> Top 5: Least Hours to Make Up</h4>
+                                    class="fas fa-medal"></i> Top 5: Most Hours Tutored</h4>
                         </div>
                         <div
                             style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px;">
@@ -451,7 +451,7 @@
                                             Name</th>
                                         <th
                                             style="padding: 0.5rem; text-align: right; border-bottom: 1px solid var(--border-color);">
-                                            Deficit Owed</th>
+                                            Total Tutored</th>
                                     </tr>
                                 </thead>
                                 <tbody id="leaderboardTop5Body">
@@ -1249,7 +1249,7 @@
                         <tr>
                             <td style="padding: 0.5rem; border-bottom: 1px solid #f1f5f9;">${student.name}</td>
                             <td style="padding: 0.5rem; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 600; color: #10b981;">
-                                ${student.hoursToMakeUp}
+                                ${student.hoursTutoredThisYear}
                             </td>
                         </tr>
                     `).join('');
