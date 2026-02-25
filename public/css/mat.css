@@ -2513,6 +2513,10 @@
   font-weight: 700;
   font-size: 0.95rem;
   border-bottom: 1px solid #94a3b8;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background-clip: padding-box;
 }
 
 .sub-header {
@@ -2520,6 +2524,10 @@
   font-weight: 600;
   padding: 0.75rem 0.5rem;
   min-width: 80px;
+  position: sticky;
+  top: 48px;
+  /* Height of the first header row */
+  z-index: 10;
 }
 
 .hours-done-header {
