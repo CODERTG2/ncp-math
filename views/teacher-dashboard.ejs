@@ -863,22 +863,25 @@
                 const response = await fetch('/api/student-hours');
                 const data = await response.json();
                 const tbody = document.getElementById('hoursTableBody');
-                tbody.innerHTML = '';
+
+                let allRowsHtml = '';
                 data.students.forEach(student => {
-                    const row = document.createElement('tr');
-                    const nameCell = document.createElement('td');
-                    nameCell.textContent = `${student.firstName} ${student.lastName}`;
-                    nameCell.style.background = '#f8fafc'; nameCell.style.position = 'sticky'; nameCell.style.left = '0'; nameCell.style.zIndex = '9'; nameCell.style.borderRight = '2px solid #e5e7eb'; nameCell.style.fontWeight = '600';
-                    row.appendChild(nameCell);
+                    let rowHtml = '<tr>';
+                    rowHtml += `<td>${student.firstName} ${student.lastName}</td>`;
+
                     const months = ['09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
                     months.forEach(month => {
                         const hours = student.monthlyHours[month] || 0;
                         const req = student.monthlyRequirements ? student.monthlyRequirements[month] : (month === '09' ? 2 : 2.5);
-                        row.innerHTML += `<td><div class="hours-done-cell ${hours < req ? 'hours-done-low' : 'hours-done-good'}">${hours}</div></td>`;
-                        row.innerHTML += `<td><div class="required-hours-cell">${req}</div></td>`;
+                        rowHtml += `<td><div class="hours-done-cell ${hours < req ? 'hours-done-low' : 'hours-done-good'}">${hours}</div></td>`;
+                        rowHtml += `<td><div class="required-hours-cell">${req}</div></td>`;
                     });
-                    tbody.appendChild(row);
+
+                    rowHtml += '</tr>';
+                    allRowsHtml += rowHtml;
                 });
+
+                tbody.innerHTML = allRowsHtml;
                 document.getElementById('loadingContainer').style.display = 'none';
                 document.getElementById('tableContainer').style.display = 'block';
             } catch (error) { console.error(error); }

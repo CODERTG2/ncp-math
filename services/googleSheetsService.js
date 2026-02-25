@@ -97,12 +97,17 @@ class GoogleSheetsService {
           }
         });
 
+        let finalNumHours = numHours || '';
+        if (time && time.includes('7:20')) {
+          finalNumHours = '1';
+        }
+
         return {
           date: formattedDate,
           day,
           maxTutors: parseInt(maxTutors) || 0,
           time,
-          numHours: numHours || '',
+          numHours: finalNumHours,
           room: room || 'TBD',
           cancelled: cancelled === 'Yes',
           tutors: tutors,
