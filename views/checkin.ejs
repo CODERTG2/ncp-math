@@ -23,138 +23,119 @@
                 </div>
 
                 <!-- Authentication Status -->
-                <% if (typeof user !=='undefined' && user) { %>
-                    <div class="auth-info">
-                        <h3><i class="fas fa-user-check"></i> Authenticated as:</h3>
-                        <p><strong>
-                                <%= user.firstName %>
-                                    <%= user.lastName %>
-                            </strong> (<%= user.email %>)</p>
-                        <p>Role: <%= user.role.charAt(0).toUpperCase() + user.role.slice(1) %>
-                        </p>
+                <% if (typeof user !== 'undefined' && user) { %>
+                <div class="auth-info">
+                    <h3><i class="fas fa-user-check"></i> Authenticated as:</h3>
+                    <p><strong>
+                        <%= user.firstName %> <%= user.lastName %>
+                    </strong> (<%= user.email %>)</p>
+                    <p>Role: <%= user.role.charAt(0).toUpperCase() + user.role.slice(1) %></p>
+                </div>
+                <% } %>
+
+                <!-- Messages -->
+                <% if (typeof error !== 'undefined' && error) { %>
+                <div class="alert alert-error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <%= error %>
+                </div>
+                <% } %>
+
+                <% if (typeof success !== 'undefined' && success) { %>
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i>
+                    <%= success %>
+                </div>
+                <% } %>
+
+                <% if (typeof warning !== 'undefined' && warning) { %>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <%= warning %>
+                </div>
+                <% } %>
+
+                <!-- Check-in Form -->
+                <% if (typeof user === 'undefined' || !user) { %>
+                <!-- Login Form -->
+                <form class="checkin-form" action="/auth/login" method="POST" id="loginForm">
+                    <input type="hidden" name="redirectTo" value="/check-in">
+
+                    <div class="form-group">
+                        <label for="email" class="form-label">
+                            <i class="fas fa-envelope"></i> Email Address
+                        </label>
+                        <input type="email" id="email" name="email" class="form-input" required placeholder="Enter your email" autocomplete="email">
                     </div>
-                    <% } %>
 
-                        <!-- Messages -->
-                        <% if (typeof error !=='undefined' && error) { %>
-                            <div class="alert alert-error">
-                                <i class="fas fa-exclamation-circle"></i>
-                                <%= error %>
-                            </div>
-                            <% } %>
+                    <div class="form-group">
+                        <label for="password" class="form-label">
+                            <i class="fas fa-lock"></i> Password
+                        </label>
+                        <input type="password" id="password" name="password" class="form-input" required placeholder="Enter your password" autocomplete="current-password">
+                    </div>
 
-                                <% if (typeof success !=='undefined' && success) { %>
-                                    <div class="alert alert-success">
-                                        <i class="fas fa-check-circle"></i>
-                                        <%= success %>
+                    <button type="submit" class="checkin-btn">
+                        <i class="fas fa-sign-in-alt"></i> Login to Check In
+                    </button>
+                </form>
+                <% } else { %>
+                <!-- Check-in Form for Authenticated Users -->
+                <form class="checkin-form" action="/api/checkin" method="POST" id="checkinForm">
+                    <div class="form-group">
+                        <label for="sessionDate" class="form-label">
+                            <i class="fas fa-calendar"></i> Session Date
+                        </label>
+                        <input type="date" id="sessionDate" name="sessionDate" class="form-input" required value="<%= new Date().toISOString().split('T')[0] %>">
+                    </div>
 
-                                    </div>
-                                    <% } %>
-                                        <% if (typeof warning !=='undefined' && warning) { %>
-                                            <div class="alert alert-warning">
-                                                <i class="fas fa-exclamation-triangle"></i>
-                                                <%= warning %>
-                                            </div>
-                                            <% } %>
+                    <div class="form-group">
+                        <label for="sessionTime" class="form-label">
+                            <i class="fas fa-clock"></i> Session Time
+                        </label>
+                        <select id="sessionTime" name="sessionTime" class="form-input" required>
+                            <option value="">Select your session time</option>
+                            <option value="9:00 AM">9:00 AM</option>
+                            <option value="9:30 AM">9:30 AM</option>
+                            <option value="10:00 AM">10:00 AM</option>
+                            <option value="10:30 AM">10:30 AM</option>
+                            <option value="11:00 AM">11:00 AM</option>
+                            <option value="11:30 AM">11:30 AM</option>
+                            <option value="12:00 PM">12:00 PM</option>
+                            <option value="12:30 PM">12:30 PM</option>
+                            <option value="1:00 PM">1:00 PM</option>
+                            <option value="1:30 PM">1:30 PM</option>
+                            <option value="2:00 PM">2:00 PM</option>
+                            <option value="2:30 PM">2:30 PM</option>
+                            <option value="3:00 PM">3:00 PM</option>
+                            <option value="3:30 PM">3:30 PM</option>
+                            <option value="4:00 PM">4:00 PM</option>
+                            <option value="4:30 PM">4:30 PM</option>
+                            <option value="5:00 PM">5:00 PM</option>
+                            <option value="5:30 PM">5:30 PM</option>
+                            <option value="6:00 PM">6:00 PM</option>
+                        </select>
+                    </div>
 
-                                                <!-- Check-in Form -->
-                                                <% if (typeof user==='undefined' || !user) { %>
-                                                    <!-- Login Form -->
-                                                    <form class="checkin-form" action="/auth/login" method="POST"
-                                                        id="loginForm">
-                                                        <input type="hidden" name="redirectTo" value="/check-in">
+                    <div class="loading-spinner" id="loadingSpinner">
+                        <div class="spinner"></div>
+                        <p>Processing check-in...</p>
+                    </div>
 
-                                                        <div class="form-group">
-                                                            <label for="email" class="form-label">
-                                                                <i class="fas fa-envelope"></i> Email Address
-                                                            </label>
-                                                            <input type="email" id="email" name="email"
-                                                                class="form-input" required
-                                                                placeholder="Enter your email" autocomplete="email">
-                                                        </div>
+                    <button type="submit" class="checkin-btn" id="checkinBtn">
+                        <i class="fas fa-clipboard-check"></i> Check In
+                    </button>
+                </form>
+                <% } %>
 
-                                                        <div class="form-group">
-                                                            <label for="password" class="form-label">
-                                                                <i class="fas fa-lock"></i> Password
-                                                            </label>
-                                                            <input type="password" id="password" name="password"
-                                                                class="form-input" required
-                                                                placeholder="Enter your password"
-                                                                autocomplete="current-password">
-                                                        </div>
-
-                                                        <button type="submit" class="checkin-btn">
-                                                            <i class="fas fa-sign-in-alt"></i> Login to Check In
-                                                        </button>
-                                                    </form>
-                                                    <% } else { %>
-                                                        <!-- Check-in Form for Authenticated Users -->
-                                                        <form class="checkin-form" action="/api/checkin" method="POST"
-                                                            id="checkinForm">
-                                                            <div class="form-group">
-                                                                <label for="sessionDate" class="form-label">
-                                                                    <i class="fas fa-calendar"></i> Session Date
-                                                                </label>
-                                                                <input type="date" id="sessionDate" name="sessionDate"
-                                                                    class="form-input" required
-                                                                    value="<%= new Date().toISOString().split('T')[0] %>">
-                                                            </div>
-
-                                                            <div class="form-group">
-                                                                <label for="sessionTime" class="form-label">
-                                                                    <i class="fas fa-clock"></i> Session Time
-                                                                </label>
-                                                                <select id="sessionTime" name="sessionTime"
-                                                                    class="form-input" required>
-                                                                    <option value="">Select your session time</option>
-                                                                    <option value="9:00 AM">9:00 AM</option>
-                                                                    <option value="9:30 AM">9:30 AM</option>
-                                                                    <option value="10:00 AM">10:00 AM</option>
-                                                                    <option value="10:30 AM">10:30 AM</option>
-                                                                    <option value="11:00 AM">11:00 AM</option>
-                                                                    <option value="11:30 AM">11:30 AM</option>
-                                                                    <option value="12:00 PM">12:00 PM</option>
-                                                                    <option value="12:30 PM">12:30 PM</option>
-                                                                    <option value="1:00 PM">1:00 PM</option>
-                                                                    <option value="1:30 PM">1:30 PM</option>
-                                                                    <option value="2:00 PM">2:00 PM</option>
-                                                                    <option value="2:30 PM">2:30 PM</option>
-                                                                    <option value="3:00 PM">3:00 PM</option>
-                                                                    <option value="3:30 PM">3:30 PM</option>
-                                                                    <option value="4:00 PM">4:00 PM</option>
-                                                                    <option value="4:30 PM">4:30 PM</option>
-                                                                    <option value="5:00 PM">5:00 PM</option>
-                                                                    <option value="5:30 PM">5:30 PM</option>
-                                                                    <option value="6:00 PM">6:00 PM</option>
-                                                                </select>
-                                                            </div>
-
-                                                            <div class="loading-spinner" id="loadingSpinner">
-                                                                <div class="spinner"></div>
-                                                                <p>Processing check-in...</p>
-                                                            </div>
-
-                                                            <button type="submit" class="checkin-btn" id="checkinBtn">
-                                                                <i class="fas fa-clipboard-check"></i> Check In
-                                                            </button>
-                                                        </form>
-                                                        <% } %>
-
-                                                            <!-- Additional Info -->
-                                                            <div
-                                                                style="margin-top: var(--space-xl); padding-top: var(--space-lg); border-top: 1px solid var(--gray-200);">
-                                                                <h4
-                                                                    style="color: var(--mu-blue); margin-bottom: var(--space-sm);">
-                                                                    Check-In Requirements:</h4>
-                                                                <ul
-                                                                    style="color: var(--gray-600); margin: 0; padding-left: var(--space-lg);">
-                                                                    <li>You can only check in twice per day from the
-                                                                        same device</li>
-                                                                    <li>Check-in is only allowed within 15 minutes of
-                                                                        your session time</li>
-
-                                                                </ul>
-                                                            </div>
+                <!-- Additional Info -->
+                <div style="margin-top: var(--space-xl); padding-top: var(--space-lg); border-top: 1px solid var(--gray-200);">
+                    <h4 style="color: var(--mu-blue); margin-bottom: var(--space-sm);">Check-In Requirements:</h4>
+                    <ul style="color: var(--gray-600); margin: 0; padding-left: var(--space-lg);">
+                        <li>You can only check in twice per day from the same device</li>
+                        <li>Check-in is only allowed within 15 minutes of your session time</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
