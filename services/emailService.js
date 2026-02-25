@@ -8,7 +8,9 @@ class EmailService {
     // Only create transporter if email credentials are provided
     if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
       this.transporter = nodemailer.createTransport({
-        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
         auth: {
           user: process.env.EMAIL_USER,
           pass: process.env.EMAIL_PASS
@@ -91,7 +93,7 @@ class EmailService {
       throw new Error('Email service not configured. Please set up EMAIL_USER and EMAIL_PASS in your .env file.');
     }
     const resetUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/reset-password/${token}`;
-    
+
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: user.email,
@@ -155,11 +157,11 @@ class EmailService {
       return;
     }
 
-    const sessionDate = new Date(sessionDetails.date).toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      month: 'long', 
-      day: 'numeric', 
-      year: 'numeric' 
+    const sessionDate = new Date(sessionDetails.date).toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
     });
 
     const mailOptions = {
@@ -216,11 +218,11 @@ class EmailService {
       return;
     }
 
-    const sessionDate = new Date(oldSessionDetails.date).toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      month: 'long', 
-      day: 'numeric', 
-      year: 'numeric' 
+    const sessionDate = new Date(oldSessionDetails.date).toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
     });
 
     const changesList = Object.keys(changes).map(key => {
