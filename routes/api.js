@@ -1412,6 +1412,7 @@ function calculateStudentStats(student, adjustments, schedule, settings, current
   return {
     firstName: student.firstName,
     lastName: student.lastName,
+    memberType: memberType,
     hoursTutoredThisMonth: Math.round(hoursTutoredThisMonth * 10) / 10,
     hoursSignedUpThisMonth: Math.round(hoursSignedUpThisMonth * 10) / 10,
     hoursTutoredThisYear: Math.round(hoursTutoredThisYear * 10) / 10,
