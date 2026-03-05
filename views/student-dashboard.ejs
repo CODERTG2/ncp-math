@@ -277,10 +277,6 @@
                             <div class="stat-number" id="hoursToMakeUp">--</div>
                             <div class="stat-label">Current Hours to Make Up</div>
                         </div>
-                        <div class="stat-item" style="text-align: center;">
-                            <div class="stat-number" id="hoursToMakeUpWholeYear">--</div>
-                            <div class="stat-label">Projected End-of-Year Deficit</div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -966,14 +962,6 @@
                     hoursToMakeUpElement.style.color = '#ef4444'; // Red for hours behind
                 } else {
                     hoursToMakeUpElement.style.color = '#22c55e'; // Green for on track
-                }
-
-                document.getElementById('hoursToMakeUpWholeYear').textContent = stats.hoursToMakeUpWholeYear || 0;
-                const hoursToMakeUpWholeYearElement = document.getElementById('hoursToMakeUpWholeYear');
-                if (stats.hoursToMakeUpWholeYear > 0) {
-                    hoursToMakeUpWholeYearElement.style.color = '#ef4444';
-                } else {
-                    hoursToMakeUpWholeYearElement.style.color = '#22c55e';
                 }
 
             } catch (error) {

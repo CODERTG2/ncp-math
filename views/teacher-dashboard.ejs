@@ -372,7 +372,6 @@
                                                 <th>Hours Signed Up This Month</th>
                                                 <th>Hours Tutored This Year</th>
                                                 <th>Hours to Make Up So Far</th>
-                                                <th>Hours to Make Up (Whole Year)</th>
                                             </tr>
                                         </thead>
                                         <tbody id="statsTableBody"></tbody>
@@ -903,7 +902,6 @@
                         <td><div class="stats-cell">${student.hoursSignedUpThisMonth}</div></td>
                         <td><div class="stats-cell">${student.hoursTutoredThisYear}</div></td>
                         <td><div class="stats-cell ${student.hoursToMakeUpSoFar > 0 ? 'stats-behind' : 'stats-good'}">${student.hoursToMakeUpSoFar}</div></td>
-                        <td><div class="stats-cell ${student.hoursToMakeUpWholeYear > 0 ? 'stats-behind' : 'stats-good'}">${student.hoursToMakeUpWholeYear}</div></td>
                     </tr>`;
                 });
                 document.getElementById('statsLoadingContainer').style.display = 'none';

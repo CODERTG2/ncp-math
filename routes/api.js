@@ -1417,7 +1417,6 @@ function calculateStudentStats(student, adjustments, schedule, settings, current
     hoursTutoredThisYear: Math.round(hoursTutoredThisYear * 10) / 10,
     hoursToMakeUp: Math.round(hoursToMakeUp * 10) / 10,
     hoursToMakeUpSoFar: Math.round(hoursToMakeUp * 10) / 10,
-    hoursToMakeUpWholeYear: Math.round(hoursToMakeUpWholeYear * 10) / 10,
     monthlyBreakdown: monthlyBreakdown // For dashboard UI
   };
 }
@@ -1532,8 +1531,7 @@ router.get('/student-stats', isAuthenticated, async (req, res) => {
       hoursSignedUpThisMonth: stats.hoursSignedUpThisMonth,
       hoursTutoredThisYear: stats.hoursTutoredThisYear,
       hoursToMakeUp: stats.hoursToMakeUp,
-      hoursToMakeUpSoFar: stats.hoursToMakeUpSoFar,
-      hoursToMakeUpWholeYear: stats.hoursToMakeUpWholeYear
+      hoursToMakeUpSoFar: stats.hoursToMakeUpSoFar
     });
 
   } catch (error) {
