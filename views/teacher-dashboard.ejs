@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teacher Dashboard - Mu Alpha Theta</title>
+    <!-- Chart.js for Stats Tab -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="/css/mat.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap"
@@ -101,6 +103,9 @@
                 </button>
                 <button class="main-tab-btn" onclick="switchMainTab('tracker')" id="main-tab-tracker">
                     <i class="fas fa-chart-bar"></i> Student Hours Tracker
+                </button>
+                <button class="main-tab-btn" onclick="switchMainTab('stats')" id="main-tab-stats">
+                    <i class="fas fa-chart-pie"></i> Program Stats
                 </button>
                 <button class="main-tab-btn" onclick="switchMainTab('meetings')" id="main-tab-meetings">
                     <i class="fas fa-users"></i> Meetings Management
@@ -372,12 +377,103 @@
                                                 <th>Hours Signed Up This Month</th>
                                                 <th>Hours Tutored This Year</th>
                                                 <th>Hours to Make Up So Far</th>
-                                                <th>Hours to Make Up (Whole Year)</th>
                                             </tr>
                                         </thead>
                                         <tbody id="statsTableBody"></tbody>
                                     </table>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2.5: STATS -->
+            <div id="main-content-stats" class="main-tab-content" style="display: none;">
+                <div
+                    style="background: var(--bg-primary); padding: 2rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <h4 style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary);">
+                            <i class="fas fa-chart-pie"></i> Program Statistics
+                        </h4>
+                        <button class="auth-button" onclick="loadStatsGraphs()"
+                            style="width: auto; padding: 0.5rem 1rem;">
+                            <i class="fas fa-sync-alt"></i> Refresh Stats
+                        </button>
+                    </div>
+
+                    <!-- Summary Cards -->
+                    <div
+                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                        <div
+                            style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid var(--border-color);">
+                            <div
+                                style="font-size: 0.875rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; margin-bottom: 0.5rem;">
+                                Total Students</div>
+                            <div id="statTotalStudents"
+                                style="font-size: 2rem; font-weight: 700; color: var(--primary-color);">--</div>
+                        </div>
+                        <div
+                            style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid var(--border-color);">
+                            <div
+                                style="font-size: 0.875rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; margin-bottom: 0.5rem;">
+                                Avg Hours/Student (YTD)</div>
+                            <div id="statAvgHours" style="font-size: 2rem; font-weight: 700; color: #10b981;">--</div>
+                        </div>
+                        <div
+                            style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid var(--border-color);">
+                            <div
+                                style="font-size: 0.875rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; margin-bottom: 0.5rem;">
+                                Total Hours Tutored (YTD)</div>
+                            <div id="statTotalHours" style="font-size: 2rem; font-weight: 700; color: #f59e0b;">--</div>
+                        </div>
+                        <div
+                            style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid var(--border-color);">
+                            <div
+                                style="font-size: 0.875rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; margin-bottom: 0.5rem;">
+                                Total Outstanding Deficit</div>
+                            <div id="statTotalDeficit" style="font-size: 2rem; font-weight: 700; color: #ef4444;">--
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Grid -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+
+                        <!-- Left Column -->
+                        <div style="display: flex; flex-direction: column; gap: 2rem;">
+                            <!-- Hours Distribution -->
+                            <div
+                                style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border-color);">
+                                <h5
+                                    style="margin: 0 0 1rem 0; font-size: 1rem; color: var(--text-primary); text-align: center;">
+                                    Hours Tutored Distribution</h5>
+                                <div style="height: 300px; position: relative;">
+                                    <canvas id="hoursDistChart"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Member Types -->
+                            <div
+                                style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border-color);">
+                                <h5
+                                    style="margin: 0 0 1rem 0; font-size: 1rem; color: var(--text-primary); text-align: center;">
+                                    Student Composition</h5>
+                                <div style="height: 250px; position: relative; display: flex; justify-content: center;">
+                                    <canvas id="memberTypeChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column -->
+                        <div
+                            style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column;">
+                            <h5
+                                style="margin: 0 0 1rem 0; font-size: 1rem; color: var(--text-primary); text-align: center;">
+                                Top 10 Active Tutors</h5>
+                            <div style="flex-grow: 1; min-height: 500px; position: relative;">
+                                <canvas id="topTutorsChart"></canvas>
                             </div>
                         </div>
                     </div>
@@ -575,6 +671,11 @@
         let currentTrackerView = 'monthly';
         let statsData = null;
 
+        // Chart instances
+        let hoursDistChartInstance = null;
+        let memberTypeChartInstance = null;
+        let topTutorsChartInstance = null;
+
         // Navbar scroll effect
         window.addEventListener('scroll', function () {
             const navbar = document.getElementById('navbar');
@@ -613,6 +714,8 @@
                 if (!statsData) loadStudentStatistics();
             } else if (tabName === 'leaderboard') {
                 loadLeaderboard();
+            } else if (tabName === 'stats') {
+                loadStatsGraphs();
             }
         }
 
@@ -903,12 +1006,131 @@
                         <td><div class="stats-cell">${student.hoursSignedUpThisMonth}</div></td>
                         <td><div class="stats-cell">${student.hoursTutoredThisYear}</div></td>
                         <td><div class="stats-cell ${student.hoursToMakeUpSoFar > 0 ? 'stats-behind' : 'stats-good'}">${student.hoursToMakeUpSoFar}</div></td>
-                        <td><div class="stats-cell ${student.hoursToMakeUpWholeYear > 0 ? 'stats-behind' : 'stats-good'}">${student.hoursToMakeUpWholeYear}</div></td>
                     </tr>`;
                 });
                 document.getElementById('statsLoadingContainer').style.display = 'none';
                 document.getElementById('statsContentContainer').style.display = 'block';
             } catch (error) { console.error(error); }
+        }
+
+        // --- Stats Tab Logic ---
+        async function loadStatsGraphs() {
+            // First ensure we have statsData
+            if (!statsData) {
+                document.getElementById('statTotalStudents').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                await loadStudentStatistics(); // Wait for data to load
+            }
+
+            if (!statsData || statsData.length === 0) return;
+
+            // 1. Calculate Summary Cards
+            const totalStudents = statsData.length;
+            const totalHours = statsData.reduce((sum, s) => sum + (s.hoursTutoredThisYear || 0), 0);
+            const totalDeficit = statsData.reduce((sum, s) => sum + (Math.max(0, s.hoursToMakeUpSoFar || 0)), 0);
+            const avgHours = totalStudents > 0 ? (totalHours / totalStudents).toFixed(1) : 0;
+
+            document.getElementById('statTotalStudents').textContent = totalStudents;
+            document.getElementById('statAvgHours').textContent = avgHours;
+            document.getElementById('statTotalHours').textContent = totalHours.toFixed(1);
+            document.getElementById('statTotalDeficit').textContent = totalDeficit.toFixed(1);
+
+            // 2. Prepare Data for Charts
+
+            // Hours Distribution
+            const distBins = { '0': 0, '0.5-2': 0, '2.5-5': 0, '5.5-10': 0, '10+': 0 };
+            let memberTypesCount = {};
+
+            // Sort data by hours to get top 10
+            const sortedByHours = [...statsData].sort((a, b) => (b.hoursTutoredThisYear || 0) - (a.hoursTutoredThisYear || 0));
+            const top10 = sortedByHours.slice(0, 10);
+            const top10Names = top10.map(s => `${s.firstName} ${s.lastName.charAt(0)}.`);
+            const top10Hours = top10.map(s => s.hoursTutoredThisYear || 0);
+
+            statsData.forEach(s => {
+                // Binning
+                const h = s.hoursTutoredThisYear || 0;
+                if (h === 0) distBins['0']++;
+                else if (h <= 2) distBins['0.5-2']++;
+                else if (h <= 5) distBins['2.5-5']++;
+                else if (h <= 10) distBins['5.5-10']++;
+                else distBins['10+']++;
+
+                // Member Types (assuming memberType is available, otherwise default to 'Student')
+                // Note: The /api/all-students-stats endpoint might need to return memberType 
+                // We'll use a placeholder or check if it exists. If not, pie chart will just show 'All'
+                const type = s.memberType || 'Student';
+                memberTypesCount[type] = (memberTypesCount[type] || 0) + 1;
+            });
+
+            // 3. Render Charts (destroy old instances if they exist)
+
+            // Define common chart colors to match MAT theme
+            const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#3b82f6'];
+
+            // Hours Distribution Bar Chart
+            if (hoursDistChartInstance) hoursDistChartInstance.destroy();
+            const ctxDist = document.getElementById('hoursDistChart').getContext('2d');
+            hoursDistChartInstance = new Chart(ctxDist, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(distBins),
+                    datasets: [{
+                        label: 'Number of Students',
+                        data: Object.values(distBins),
+                        backgroundColor: '#6366f1',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                }
+            });
+
+            // Member Type Pie Chart
+            if (memberTypeChartInstance) memberTypeChartInstance.destroy();
+            const ctxPie = document.getElementById('memberTypeChart').getContext('2d');
+            memberTypeChartInstance = new Chart(ctxPie, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(memberTypesCount),
+                    datasets: [{
+                        data: Object.values(memberTypesCount),
+                        backgroundColor: colors.slice(0, Object.keys(memberTypesCount).length),
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'right' } }
+                }
+            });
+
+            // Top 10 Tutors Bar Chart
+            if (topTutorsChartInstance) topTutorsChartInstance.destroy();
+            const ctxTop = document.getElementById('topTutorsChart').getContext('2d');
+            topTutorsChartInstance = new Chart(ctxTop, {
+                type: 'bar',
+                data: {
+                    labels: top10Names,
+                    datasets: [{
+                        label: 'Hours Tutored',
+                        data: top10Hours,
+                        backgroundColor: '#10b981',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // Makes it horizontal
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { beginAtZero: true } }
+                }
+            });
         }
 
         // --- Global Settings Logic ---
