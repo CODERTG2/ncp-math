@@ -1037,7 +1037,18 @@
             // 2. Prepare Data for Charts
 
             // Hours Distribution
-            const distBins = { '0': 0, '0.5-2': 0, '2.5-5': 0, '5.5-10': 0, '10+': 0 };
+            const distBins = { 
+                '0': 0, 
+                '0.5-2': 0, 
+                '2.5-4': 0, 
+                '4.5-6': 0, 
+                '6.5-8': 0, 
+                '8.5-10': 0, 
+                '10.5-12': 0, 
+                '12.5-15': 0, 
+                '15.5-20': 0, 
+                '20+': 0 
+            };
             let memberTypesCount = {};
 
             // Sort data by hours to get top 10
@@ -1051,9 +1062,14 @@
                 const h = s.hoursTutoredThisYear || 0;
                 if (h === 0) distBins['0']++;
                 else if (h <= 2) distBins['0.5-2']++;
-                else if (h <= 5) distBins['2.5-5']++;
-                else if (h <= 10) distBins['5.5-10']++;
-                else distBins['10+']++;
+                else if (h <= 4) distBins['2.5-4']++;
+                else if (h <= 6) distBins['4.5-6']++;
+                else if (h <= 8) distBins['6.5-8']++;
+                else if (h <= 10) distBins['8.5-10']++;
+                else if (h <= 12) distBins['10.5-12']++;
+                else if (h <= 15) distBins['12.5-15']++;
+                else if (h <= 20) distBins['15.5-20']++;
+                else distBins['20+']++;
 
                 // Member Types (assuming memberType is available, otherwise default to 'Student')
                 // Note: The /api/all-students-stats endpoint might need to return memberType 
